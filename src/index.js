@@ -1,12 +1,28 @@
 // require('dotenv').config({path: './env'});
-import dotenv from 'dotenv';
-import connectDB from './db/index.js';
+import dotenv from "dotenv";
+import connectDB from "./db/index.js";
+import { app } from "./app.js";
 
 dotenv.config({
-    path: './env'
+  path: "./env",
 });
 
-connectDB();
+const port = process.env.PORT || 8000;
+
+connectDB()
+  .then(() => {
+    app.on("error", (error) => {
+      console.error("ERR: ", error);
+      throw error;
+    });
+
+    app.listen(port, () => {
+      console.log(`Server listening at http://localhost:${port}`);
+    });
+  })
+  .catch((err) => {
+    console.log(`MONGODB Connection Failed!! - ${err}`);
+  });
 
 
 
@@ -22,9 +38,7 @@ connectDB();
 
 
 
-
-
-
+  
 // import express from 'express';
 // const app = express()
 // ;(async () => {
@@ -41,11 +55,10 @@ connectDB();
 //             console.log(`App is listening on port: ${process.env.PORT}`);
 //         })
 
-
 //     }catch(error){
 //         console.error("ERROR: " , error);
 //         throw error;
-        
+
 //     }
 
 // })();
