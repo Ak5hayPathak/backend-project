@@ -181,19 +181,21 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
-  
+
     const user = await User.findById(decodedToken?._id);
-  
+
     if (!user) {
       throw new APIError(401, "Invalid Refresh Token");
     }
-  
+
     if (incomingRefreshToken !== user?.refreshToken) {
       throw new APIError(401, "Refresh token is expired or used");
     }
-  
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user?._id);
-  
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+      user?._id
+    );
+
     return res
       .status(200)
       .cookie("accessToken", accessToken, options)
@@ -211,24 +213,25 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   } catch (error) {
     throw new APIError(401, error?.message || "Invalid Refresh Token");
   }
-
 });
 
 const changePassword = asyncHandler(async (req, res) => {
-  const {oldPassword, newPassword, confirmPassword} = req.body;
+  const { oldPassword, newPassword, confirmPassword } = req.body;
 
-  if(!oldPassword || !newPassword || !confirmPassword){
+  if (!oldPassword || !newPassword || !confirmPassword) {
     throw new APIError(400, "All fields are mandatory!");
   }
 
-  if(oldPassword === newPassword){
+  if (oldPassword === newPassword) {
     throw new APIError(400, "New password cannot be same as the old password");
   }
 
-  if(confirmPassword !== newPassword){
-    throw new APIError(400, "Confirm password must be same as the new passoword");
+  if (confirmPassword !== newPassword) {
+    throw new APIError(
+      400,
+      "Confirm password must be same as the new passoword"
+    );
   }
-
 
   const user = await User.findById(req.user?._id);
 
@@ -238,24 +241,132 @@ const changePassword = asyncHandler(async (req, res) => {
 
   const isPasswordValid = await user.isPasswordCorrect(oldPassword);
 
-  if(!isPasswordValid){
+  if (!isPasswordValid) {
     throw new APIError(400, "Invalid old password");
   }
 
   user.password = newPassword;
-  await user.save({validateBeforeSave: false});
+  await user.save({ validateBeforeSave: false });
 
   return res
-  .status(200)
-  .json(new APIResponse(200, {}, "Password changed successfully!"));
-
+    .status(200)
+    .json(new APIResponse(200, {}, "Password changed successfully!"));
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
-  .status(200)
-  .json(new APIResponse(200, req.user, "User fetched successfully"));
+    .status(200)
+    .json(new APIResponse(200, req.user, "User fetched successfully"));
 });
 
+const updateUserDetails = asyncHandler(async (req, res) => {
+  const { username, email, fullName } = req.body;
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken, changePassword, getCurrentUser };
+  if (!username && !email && !fullName) {
+    throw new APIError(400, "At least one field is required!");
+  }
+
+  const updateFields = {};
+
+  if (fullName) updateFields.fullName = fullName.trim();
+
+  if (email) {
+    const existingUser = await User.findOne({
+      email: email.trim().toLowerCase(),
+    });
+
+    if (existingUser) {
+      throw new APIError(400, "Email already exists");
+    }
+
+    updateFields.email = email.trim().toLowerCase();
+  }
+
+  if (username) {
+    const existingUser = await User.findOne({
+      username: username.trim().toLowerCase(),
+    });
+
+    if (existingUser) {
+      throw new APIError(400, "Username already exists");
+    }
+
+    updateFields.username = username.trim().toLowerCase();
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: updateFields,
+    },
+
+    { new: true }
+  ).select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, user, "Account details updated successfully"));
+});
+
+const updateFiles = asyncHandler(async (req, res) => {
+  if (!req.files) throw new APIError(400, "Files are missing");
+
+  const avatarLocalPath = req.files?.avatar[0]?.path;
+  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+  if (!(avatarLocalPath || coverImageLocalPath)) {
+    throw new APIError(400, "At least one file is required!");
+  }
+
+  const updateFields = {};
+
+  if (avatarLocalPath) {
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+    if (!avatar?.url) {
+      // !avatar?.url because if uploadOnCloudinary() returns null, then avatar.url throws:
+      // "Cannot read properties of null"
+
+      throw new APIError(400, "Error while uploading on avatar");
+    }
+
+    updateFields.avatar = avatar.url;
+  }
+
+  if (coverImageLocalPath) {
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+    if (!coverImage?.url) {
+      throw new APIError(400, "Error while uploading on cover image");
+    }
+
+    updateFields.coverImage = coverImage.url;
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: updateFields,
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new APIError(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, user, "File(s) updated successfully!"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changePassword,
+  updateUserDetails,
+  getCurrentUser,
+  updateFiles
+};
