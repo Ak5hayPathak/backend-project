@@ -4,6 +4,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { APIError } from "../utils/APIError.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const options = {
   httpOnly: true,
@@ -152,8 +153,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1,
       },
     },
     {
@@ -343,7 +344,16 @@ const updateFiles = asyncHandler(async (req, res) => {
     updateFields.coverImage = coverImage.url;
   }
 
-  const user = await User.findByIdAndUpdate(
+  let user = await User.findById(req.user._id);
+
+  if(!user){
+    throw new APIError(404, "User not found");
+  }
+
+  const oldAvatar = user.avatar;
+  const oldcoverImg = user.coverImage;
+  
+  user = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: updateFields,
@@ -355,6 +365,7 @@ const updateFiles = asyncHandler(async (req, res) => {
     throw new APIError(404, "User not found");
   }
 
+  
   return res
     .status(200)
     .json(new APIResponse(200, user, "File(s) updated successfully!"));
@@ -427,7 +438,7 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(200, channel[0], "User channel fetched successfully")
+        new APIResponse(200, channel[0], "User channel fetched successfully")
     );
 });
 
@@ -477,7 +488,7 @@ const getWatchHistory = asyncHandler(async(req, res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(
+        new APIResponse(
             200,
             user[0].watchHistory,
             "Watch history fetched successfully"
