@@ -325,7 +325,7 @@ const updateFiles = asyncHandler(async (req, res) => {
   if (avatarLocalPath) {
     const avatar = await uploadOnCloudinary(avatarLocalPath);
 
-    console.log("Here");
+    // console.log("Here");
 
     if (!avatar?.url) {
       // !avatar?.url because if uploadOnCloudinary() returns null, then avatar.url throws:
@@ -341,7 +341,7 @@ const updateFiles = asyncHandler(async (req, res) => {
     const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
     if (!coverImage?.url) {
-      throw new APIError(400, "Error while uploading on cover image");
+      throw new APIError(500, "Error while uploading on cover image");
     }
 
     updateFields.coverImage = coverImage.url;
@@ -372,7 +372,7 @@ const updateFiles = asyncHandler(async (req, res) => {
     try {
       await deleteFromCloudinary(oldAvatar);
     } catch (err) {
-      console.error(err);
+      throw new APIError(500, err.message);;
     }
   }
 
@@ -380,7 +380,7 @@ const updateFiles = asyncHandler(async (req, res) => {
     try {
       await deleteFromCloudinary(oldcoverImg);
     } catch (err) {
-      console.error(err);
+      throw new APIError(500, err.message);;
     }
   }
 
