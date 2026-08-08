@@ -163,15 +163,111 @@ const getVideoById = asyncHandler(async (req, res) => {
     throw new APIError(400, "Invalid video id!");
   }
 
-  const video = await Video.findById(videoId);
+  const video = await Video.findByIdAndUpdate(
+    videoId,
+    { $inc: { views: 1 } }, //increases views to +1 preventing race condition
+    { returnDocument: "after" }
+  );
 
-  if (!video) {
-    throw new APIError(404, "Video not found!");
+  if (req.user?._id) {
+    await User.findByIdAndUpdate(req.user._id, {
+      $push: {
+        watchHistory: {
+          video: new mongoose.Types.ObjectId(videoId),
+          watchedAt: new Date(), //attaches the exact date and time when the video was watched
+        },
+      },
+    });
+  }
+
+  const aggregatedArrayOfVideo = await Video.aggregate([
+    {
+      $match: {
+        _id: mongoose.Types.ObjectId(videoId),
+      },
+    },
+
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "video",
+        as: "likes",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "subscription",
+        localField: "owner",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              fullName: 1,
+              avatar: 1,
+            },
+          },
+        ],
+      },
+    },
+
+    {
+      $addFields: {
+        owner: {
+          $first: "$owner",
+        },
+
+        likesCount: {
+          $size: "$likes",
+        },
+
+        isLiked: {
+          $in: [req.user.id, "$likes.likedBy"],
+        },
+
+        subscriberCount: {
+          $size: "$subscribers",
+        },
+
+        isSubscribed: {
+          $in: [req.user.id, "$subscribers.subscriber"],
+        },
+      },
+    },
+
+    {
+      $project: {
+        likes: 0,
+        subscribers: 0,
+      },
+    },
+  ]);
+
+  if (!aggregatedArrayOfVideo?.length) {
+    throw new ApiError(404, "Video dataset error");
   }
 
   return res
     .status(200)
-    .json(new APIResponse(200, video, "Video Received Successfully!"));
+    .json(
+      new APIResponse(
+        200,
+        aggregatedArrayOfVideo[0],
+        "Video Received Successfully!"
+      )
+    );
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
