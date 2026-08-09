@@ -76,9 +76,9 @@ const updateComment = asyncHandler(async (req, res) => {
     throw new APIError(404, "Comment not found or access denied!");
   }
 
-  const {content} = req.body;
+  const { content } = req.body;
 
-  if(!content?.trim()){
+  if (!content?.trim()) {
     throw new APIError(400, "Content is required!");
   }
 
@@ -86,13 +86,35 @@ const updateComment = asyncHandler(async (req, res) => {
   await comment.save();
 
   return res
-  .status(200)
-  .json(
-    new APIResponse(200, comment, "Comment updated successfully!")
-  );
-
+    .status(200)
+    .json(new APIResponse(200, comment, "Comment updated successfully!"));
 });
 
-const deleteComment = asyncHandler(async (req, res) => {});
+const deleteComment = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+
+  if (!commentId) {
+    throw new APIError(400, "Comment id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(commentId)) {
+    throw new APIError(400, "Invalid comment id!");
+  }
+
+  const comment = await Comment.findOne({
+    _id: commentId,
+    owner: req.user._id,
+  });
+
+  if (!comment) {
+    throw new APIError(404, "Comment not found or access denied!");
+  }
+
+  await comment.deleteOne();
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, null, "Comment deleted successfully!"));
+});
 
 export { getVideoComments, addComment, updateComment, deleteComment };
