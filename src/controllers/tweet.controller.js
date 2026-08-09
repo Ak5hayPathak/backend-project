@@ -8,7 +8,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 const createTweet = asyncHandler(async (req, res) => {
   let { content } = req.body;
 
-  if (!content) {
+  if (!content?.trim()) {
     throw new APIError(400, "Tweet is required");
   }
 
