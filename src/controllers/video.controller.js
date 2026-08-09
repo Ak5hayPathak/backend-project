@@ -126,7 +126,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
 
   if (!userId) {
-    throw new APIError(400, "Unauthorized Request!");
+    throw new APIError(401, "Unauthorized Request!");
   }
 
   const video = await Video.create({
