@@ -1,10 +1,10 @@
 import mongoose, { isValidObjectId } from "mongoose";
-import { Video } from "../models/video.model";
-import { User } from "../models/user.model";
-import { APIError } from "../utils/APIError";
-import { APIResponse } from "../utils/APIResponse";
-import { asyncHandler } from "../utils/asyncHandler";
-import { uploadOnCloudinary } from "../utils/cloudinary";
+import { Video } from "../models/video.model.js";
+import { User } from "../models/user.model.js";
+import { APIError } from "../utils/APIError.js";
+import { APIResponse } from "../utils/APIResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const {
