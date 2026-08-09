@@ -20,67 +20,101 @@ const createTweet = asyncHandler(async (req, res) => {
 
   const tweet = await Tweet.create({
     content,
-    owner: userId
+    owner: userId,
   });
 
   return res
-  .status(201)
-  .json(new APIResponse(201, tweet, "Tweet created Successfully"));
+    .status(201)
+    .json(new APIResponse(201, tweet, "Tweet created Successfully"));
 });
 
 const getUserTweet = asyncHandler(async (req, res) => {
-    const {userId} = req.body;
+  const { userId } = req.body;
 
-    if(!mongoose.isValidObjectId(userId)){
-        throw new ApiError(400, "Invalid User ID");
-    }
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new ApiError(400, "Invalid User ID");
+  }
 
-    const tweets = await Tweet.aggregate([
-        {
-            $match: {
-                owner: mongoose.Types.ObjectId(userId)
+  const tweets = await Tweet.aggregate([
+    {
+      $match: {
+        owner: mongoose.Types.ObjectId(userId),
+      },
+    },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "ownerDetails",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              fullName: 1,
+              avatar: 1,
             },
-        },
+          },
+        ],
+      },
+    },
 
-        {
-            $lookup: {
-                from: "users",
-                localField: "owner",
-                foreignField: "_id",
-                as: "ownerDetails",
-                pipeline: [
-                    {
-                        $project: {
-                            username: 1,
-                            fullName: 1,
-                            avatar: 1
-                        }
-                    }
-                ]
-            }
-        },
+    {
+      $unwind: "$ownerDetails",
+    },
 
-        {
-            $unwind: "$ownerDetails"
-        },
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+  ]);
 
-        {
-            $sort: {
-                createdAt: -1
-            }
-        }
-    ]);
+  if (tweets.length === 0) {
+    throw new APIError(404, "No tweets found for this user");
+  }
 
-    if(tweets.length === 0){
-        throw new APIError(404, "No tweets found for this user");
-    }
-
-    return res
-        .status(200)
-        .json(new ApiResponse(200, tweets, "Tweets fetched successfully"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, tweets, "Tweets fetched successfully"));
 });
 
-const updateTweet = asyncHandler(async (req, res) => {});
+const updateTweet = asyncHandler(async (req, res) => {
+  const { tweetId } = req.params;
+
+  if (!tweetId) {
+    throw new APIError(400, "Tweet id is required!");
+  }
+
+  if (!isValidObjectId(tweetId)) {
+    throw new APIError(400, "Invalid tweet id!");
+  }
+
+  const tweet = await Tweet.findOne({
+    _id: tweetId,
+    owner: req.user._id,
+  });
+
+  if (!tweet) {
+    throw new APIError(404, "Tweet not found or access denied!");
+  }
+
+  const { content } = req.body;
+
+  if(!content?.trim()){
+    throw new APIError(400, "Content is required!");
+  }
+
+  tweet.content = content;
+
+  await tweet.save();
+
+  return res
+      .status(200)
+      .json(new APIResponse(200, tweet, "Tweet updated successfully!"));
+
+});
 
 const deleteTweet = asyncHandler(async (req, res) => {});
 
