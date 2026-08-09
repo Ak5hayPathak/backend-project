@@ -6,7 +6,98 @@ import { Comment } from "../models/comment.model.js";
 import { User } from "../models/user.model.js";
 import { Video } from "../models/video.model.js";
 
-const getVideoComments = asyncHandler(async (req, res) => {});
+const getVideoComments = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    throw new APIError(400, "Video id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new APIError(400, "Invalid video id!");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new APIError(404, "Video not found or access denied!");
+  }
+
+  const { page = 1, limit = 10, sortType = "desc" } = req.query;
+
+  const comments = await Comment.aggregatePaginate(
+    Comment.aggregate([
+      {
+        $match: {
+          video: new mongoose.Types.ObjectId(videoId),
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "ownerDetails",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                username: 1,
+                avatar: 1,
+                fullName: 1,
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unwind: "$ownerDetails",
+      },
+
+      {
+        $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "comment",
+          as: "likes",
+        },
+      },
+
+      {
+        $addFields: {
+          likesCount: {
+            $size: "$likes",
+          },
+          isLiked: {
+            $in: [new mongoose.Types.ObjectId(req.user._id), "$likes.likedBy"],
+          },
+        },
+      },
+
+      {
+        $sort: {
+          createdAt: sortType === "asc" ? 1 : -1,
+        },
+      },
+    ]),
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
+
+  if (comments.docs.length === 0) {
+    // comments.docs.length because aggregatePaginate() normally returns
+    // a pagination object, not a plain array
+    throw new APIError(404, "No comments found on this video");
+  }
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, comments, "Comments fetched successfully!"));
+});
 
 const addComment = asyncHandler(async (req, res) => {
   const { content } = req.body;
