@@ -1,20 +1,31 @@
-import mongoose, {Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
-const subscriptionSchema = Schema({
+const subscriptionSchema = new Schema(
+    {
+        subscriber: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
 
-    subscriber: {
-        type: mongoose.Types.ObjectId, //One who is subscribing
-        ref: "User"
+        channel: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
     },
+    {
+        timestamps: true,
+    }
+);
 
-    channel: {
-        type: mongoose.Types.ObjectId, //One who is subscribed to
-        ref: "User"
-    },
+// One subscriber can subscribe to a channel only once
+subscriptionSchema.index(
+    { subscriber: 1, channel: 1 },
+    { unique: true }
+);
 
-
-}, {
-    timestamps: true
-});
-
-export const Subscription = mongoose.model("Subscription", subscriptionSchema);
+export const Subscription = mongoose.model(
+    "Subscription",
+    subscriptionSchema
+);
