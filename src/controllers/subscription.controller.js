@@ -1,0 +1,57 @@
+import mongoose from "mongoose";
+import { User } from "../models/user.model.js";
+import { Subscription } from "../models/subscription.model.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+
+const toggleSubscription = asyncHandler(async (req, res) => {
+  const { channelId } = req.params;
+
+  if (!channelId) {
+    throw new APIError(400, "Channel id is required!");
+  }
+
+  if (!isValidObjectId(channelId)) {
+    throw new APIError(400, "Invalid channel id!");
+  }
+
+  const channel = await User.findById(channelId);
+
+  if (!channel) {
+    throw new APIError(404, "Channel not found!");
+  }
+
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized Request!");
+  }
+
+  if (channelId === req.user._id.toString()) {
+    throw new APIError(400, "You cannot subscribe to yourself!");
+  }
+
+  const alreadySubscribed = await Subscription.findOne({
+    channel: channelId,
+    subscriber: req.user._id,
+  });
+
+  if (alreadySubscribed) {
+    await alreadySubscribed.deleteOne();
+    return res
+      .status(200)
+      .json(new APIResponse(200, null, "Channel unsubscribed successfully"));
+  } else {
+    await Subscription.create({
+      channel: channelId,
+      subscriber: req.user._id,
+    });
+
+    return res
+      .status(201)
+      .json(new APIResponse(201, null, "Channel subscribed successfully"));
+  }
+});
+
+const getUserChannelSubscribers = asyncHandler(async (req, res) => {});
+
+const getSubscribedChannels = asyncHandler(async (req, res) => {});
