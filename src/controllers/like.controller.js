@@ -49,3 +49,46 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
       .json(new APIResponse(201, null, "Video liked successfully"));
   }
 });
+
+const toggleCommentLike = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+
+  if (!commentId) {
+    throw new APIError(400, "Comment id is required!");
+  }
+
+  if (!isValidObjectId(commentId)) {
+    throw new APIError(400, "Invalid comment id!");
+  }
+
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    throw new APIError(404, "Comment not found!");
+  }
+
+  if (!req.user) {
+    throw new APIError(400, "Unauthorized Request!");
+  }
+
+  const alreadyLiked = await Like.findOne({
+    comment: commentId,
+    likedBy: req.user._id,
+  });
+
+  if (alreadyLiked) {
+    await alreadyLiked.deleteOne();
+    return res
+      .status(200)
+      .json(new APIResponse(200, null, "Comment unliked successfully"));
+  } else {
+    await Like.create({
+      comment: commentId,
+      likedBy: req.user._id,
+    });
+
+    return res
+      .status(201)
+      .json(new APIResponse(201, null, "Comment liked successfully"));
+  }
+});
