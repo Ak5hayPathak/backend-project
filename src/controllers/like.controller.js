@@ -135,3 +135,90 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
       .json(new APIResponse(201, null, "Tweet liked successfully"));
   }
 });
+
+const getLikedVideos = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized Request!");
+  }
+  const { page = 1, limit = 10, sortType = "desc" } = req.query;
+
+  const likedVideos = await Like.aggregatePaginate(
+    Like.aggregate([
+      {
+        $match: {
+          likedBy: new mongoose.Types.ObjectId(req.user._id),
+          video: {
+            $exists: true,
+          },
+        },
+      },
+
+      {
+        $lookup: {
+          from: "videos",
+          localField: "video",
+          foreignField: "_id",
+          as: "videos",
+          pipeline: [
+            {
+              $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+              },
+            },
+
+            {
+              $unwind: "$ownerDetails",
+            },
+
+            {
+              $project: {
+                videoFile: 1,
+                title: 1,
+                thumbnail: 1,
+                views: 1,
+                ownerDetails: {
+                  username: 1,
+                  avatar: 1,
+                  fullName: 1,
+                },
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unwind: "$videos",
+      },
+
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          // Final cleanup
+          _id: 1,
+          videos: 1,
+        },
+      },
+    ]),
+
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
+
+  if (likedVideos.docs.length === 0) {
+    throw new APIError(404, "No liked videos found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, likedVideos, "liked videos fetched succcessfully")
+    );
+});
+
+export { toggleVideoLike, toggleCommentLike, toggleTweetLike, getLikedVideos };
