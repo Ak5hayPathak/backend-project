@@ -194,7 +194,11 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         $unwind: "$videos",
       },
 
-      { $sort: { createdAt: -1 } },
+      {
+        $sort: {
+          createdAt: sortType === "asc" ? 1 : -1,
+        },
+      },
       {
         $project: {
           // Final cleanup
