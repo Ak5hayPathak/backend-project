@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { User } from "../models/user.model.js";
 import { Subscription } from "../models/subscription.model.js";
-import { ApiError } from "../utils/ApiError.js";
+import { APIError, ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -52,6 +52,66 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   }
 });
 
-const getUserChannelSubscribers = asyncHandler(async (req, res) => {});
+const getUserChannelSubscribers = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
 
-const getSubscribedChannels = asyncHandler(async (req, res) => {});
+  const { page = 1, limit = 20, sortType = "desc" } = req.query;
+
+  const subscribers = await Subscription.aggregatePaginate(
+    Subscription.aggregate([
+      {
+        $match: {
+          channel: new mongoose.Types.ObjectId(req.user._id),
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "subscriber",
+          foreignField: "_id",
+          as: "subscriberDetails",
+          pipeline: [
+            {
+              $project: {
+                username: 1,
+                fullName: 1,
+                avatar: 1,
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unwind: "$subscriberDetails",
+      },
+
+      {
+        $sort: {
+          createdAt: sortType === "asc" ? 1 : -1,
+        },
+      },
+    ]),
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
+
+  if (subscribers.docs.length === 0) {
+    throw new APIError(404, "No subscribers found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, subscribers, "Subscribers fetched succcessfully")
+    );
+});
+
+const getSubscribedChannels = asyncHandler(async (req, res) => {
+  
+});
