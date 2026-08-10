@@ -108,10 +108,70 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200, subscribers, "Subscribers fetched succcessfully")
+      new ApiResponse(200, subscribers, "Subscribers fetched successfully")
     );
 });
 
 const getSubscribedChannels = asyncHandler(async (req, res) => {
-  
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const { page = 1, limit = 20, sortType = "desc" } = req.query;
+
+  const subscribedChannels = await Subscription.aggregatePaginate(
+    Subscription.aggregate([
+      {
+        $match: {
+          subscriber: new mongoose.Types.ObjectId(req.user._id),
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "channel",
+          foreignField: "_id",
+          as: "channelDetails",
+          pipeline: [
+            {
+              $project: {
+                username: 1,
+                avatar: 1,
+                fullName: 1,
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unwind: "$channelDetails",
+      },
+
+      {
+        $sort: {
+          createdAt: sortType === "asc" ? 1 : -1,
+        },
+      },
+    ]),
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
+
+  if (subscribedChannels.docs.length === 0) {
+    throw new APIError(404, "No subscribed channel found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        subscribedChannels,
+        "Subscribed channels fetched successfully"
+      )
+    );
 });
