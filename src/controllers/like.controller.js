@@ -25,7 +25,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
   }
 
   if (!req.user) {
-    throw new APIError(400, "Unauthorized Request!");
+    throw new APIError(401, "Unauthorized Request!");
   }
 
   const alreadyLiked = await Like.findOne({
@@ -68,7 +68,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
   }
 
   if (!req.user) {
-    throw new APIError(400, "Unauthorized Request!");
+    throw new APIError(401, "Unauthorized Request!");
   }
 
   const alreadyLiked = await Like.findOne({
@@ -111,7 +111,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
   }
 
   if (!req.user) {
-    throw new APIError(400, "Unauthorized Request!");
+    throw new APIError(401, "Unauthorized Request!");
   }
 
   const alreadyLiked = await Like.findOne({
