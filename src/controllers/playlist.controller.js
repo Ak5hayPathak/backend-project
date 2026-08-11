@@ -259,3 +259,58 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, playlists, "Playlists fetched successfully!"));
 });
+
+const addVideoToPlaylist = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+  const { videoId, playlistId } = req.params;
+
+  if (!playlistId) {
+    throw new APIError(400, "Playlist id is required!");
+  }
+
+  if (!isValidObjectId(playlistId)) {
+    throw new APIError(400, "Invalid playlist id!");
+  }
+
+  const playlist = await Playlist.findOne({
+    _id: playlistId,
+    owner: req.user._id,
+  });
+
+  if (!playlist) {
+    throw new APIError(404, "Playlist not found or access denied!");
+  }
+
+  if (!videoId) {
+    throw new APIError(400, "Video id is required!");
+  }
+
+  if (!isValidObjectId(videoId)) {
+    throw new APIError(400, "Invalid video id!");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new APIError(404, "Video not found!");
+  }
+
+  if (playlist.videos.some((id) => id.toString() === videoId)) {
+    throw new APIError(400, "Video already exists in the playlist!");
+  }
+
+  playlist.videos.push(videoId);
+  await playlist.save();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        playlist,
+        "Video added to the playlist successfully!"
+      )
+    );
+});
