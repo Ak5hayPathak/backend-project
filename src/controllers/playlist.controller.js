@@ -125,6 +125,31 @@ const getPlaylistById = asyncHandler(async (req, res) => {
         ],
       },
     },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "ownerPlaylist",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              fullName: 1,
+              avatar: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        ownerPlaylist: {
+          $first: "$ownerPlaylist",
+        },
+      },
+    },
   ]);
 
   if (playlist.length === 0) {
