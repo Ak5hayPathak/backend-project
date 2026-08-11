@@ -393,3 +393,67 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     .status(200)
     .json(new APIResponse(200, null, "Playlist deleted successfully"));
 });
+
+const updatePlaylist = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const { playlistId } = req.params;
+  const { name, description } = req.body;
+
+  if (!playlistId) {
+    throw new APIError(400, "Playlist id is required!");
+  }
+
+  if (!isValidObjectId(playlistId)) {
+    throw new APIError(400, "Invalid playlist id!");
+  }
+
+  const playlist = await Playlist.findOne({
+    _id: playlistId,
+    owner: req.user._id,
+  });
+
+  if (!playlist) {
+    throw new APIError(404, "Playlist not found or access denied!");
+  }
+
+  if (name === undefined && description === undefined) {
+    throw new APIError(400, "At least one field is required!");
+  }
+
+  if (name !== undefined) {
+    if (!name.trim()) {
+      throw new APIError(400, "Playlist name cannot be empty!");
+    }
+
+    playlist.name = name;
+  }
+
+  if (description !== undefined) {
+    playlist.description = description;
+  }
+
+  await playlist.save();
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(
+        200,
+        playlist,
+        "Playlist updated successfully!"
+      )
+    );
+});
+
+export {
+  createPlaylist,
+  getPlaylistById,
+  getUserPlaylists,
+  addVideoToPlaylist,
+  removeVideoFromPlaylist,
+  deletePlaylist,
+  updatePlaylist
+};
