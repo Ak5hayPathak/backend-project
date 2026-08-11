@@ -314,3 +314,52 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
       )
     );
 });
+
+const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+  const { videoId, playlistId } = req.params;
+
+  if (!playlistId) {
+    throw new APIError(400, "Playlist id is required!");
+  }
+
+  if (!isValidObjectId(playlistId)) {
+    throw new APIError(400, "Invalid playlist id!");
+  }
+
+  const playlist = await Playlist.findOne({
+    _id: playlistId,
+    owner: req.user._id,
+  });
+
+  if (!playlist) {
+    throw new APIError(404, "Playlist not found or access denied!");
+  }
+
+  if (!videoId) {
+    throw new APIError(400, "Video id is required!");
+  }
+
+  if (!isValidObjectId(videoId)) {
+    throw new APIError(400, "Invalid video id!");
+  }
+
+  if (!playlist.videos.some((id) => id.toString() === videoId)) {
+    throw new APIError(404, "Video does not exist in the playlist!");
+  }
+
+  playlist.videos.pull(videoId);
+  await playlist.save();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        playlist,
+        "Video removed from the playlist successfully!"
+      )
+    );
+});
