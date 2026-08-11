@@ -162,3 +162,100 @@ const getPlaylistById = asyncHandler(async (req, res) => {
       new ApiResponse(200, playlist, "User playlist fetched successfully!")
     );
 });
+
+const getUserPlaylists = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    throw new APIError(400, "User Id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new ApiError(400, "invalid user Id");
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new APIError(404, "User not found!");
+  }
+
+  const { page = 1, limit = 10 } = req.query;
+
+  const playlists = await Playlist.aggregatePaginate(
+    Playlist.aggregate([
+      {
+        $match: {
+          owner: new mongoose.Types.ObjectId(userId),
+        },
+      },
+
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "videos",
+          localField: "videos",
+          foreignField: "_id",
+          as: "videosDetails",
+          pipeline: [
+            {
+              $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "userDetails",
+                pipeline: [
+                  {
+                    $project: {
+                      username: 1,
+                      avatar: 1,
+                      fullName: 1,
+                    },
+                  },
+                ],
+              },
+            },
+
+            {
+              $unwind: "$userDetails",
+            },
+
+            {
+              $project: {
+                title: 1,
+                thumbnail: 1,
+                description: 1,
+                userDetails: 1,
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $addFields: {
+          totalVideos: {
+            $size: "$videosDetails",
+          },
+        },
+      },
+    ]),
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
+
+  if (playlists.docs.length === 0) {
+    throw new APIError(404, "No playlists found!");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, playlists, "Playlists fetched successfully!"));
+});
