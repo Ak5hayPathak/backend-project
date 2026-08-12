@@ -455,5 +455,5 @@ export {
   addVideoToPlaylist,
   removeVideoFromPlaylist,
   deletePlaylist,
-  updatePlaylist
+  updatePlaylist,
 };

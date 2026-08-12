@@ -414,3 +414,5 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     .status(200)
     .json(new APIResponse(200, video, "Publish status updated successfully!"));
 });
+
+export {getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo, togglePublishStatus};
