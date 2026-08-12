@@ -56,6 +56,6 @@ router.route("/update-files").patch(
 
   updateFiles
 );
-router.route('/profile/:username').get(verifyJWT, getUserChannelProfile);
+router.route('/c/:username').get(verifyJWT, getUserChannelProfile);
 router.route('/history').get(verifyJWT, getWatchHistory);
 export default router;
