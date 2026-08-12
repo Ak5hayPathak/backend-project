@@ -72,6 +72,65 @@ const getChannelStats = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, stats, "Channel stats fetched successfully"));
 });
 
-const getChannelVideos = asyncHandler(async (req, res) => {});
+const getChannelVideos = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const userId = req.user._id;
+
+  const { page = 1, limit = 10, sortType = "desc" } = req.query;
+
+  const videos = await Video.aggregatePaginate(
+    Video.aggregate([
+      {
+        $match: {
+          owner: new mongoose.Types.ObjectId(userId),
+        },
+      },
+
+      {
+        $sort: {
+          createdAt: sortType === "asc" ? 1 : -1,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "video",
+          as: "likes",
+        },
+      },
+
+      {
+        $addFields: {
+          likesCount: {
+            $size: "$likes",
+          },
+        },
+      },
+
+      {
+        $project: {
+          likes: 0,
+        },
+      },
+    ]),
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
+
+  if (videos.docs.length === 0) {
+    throw new APIError(404, "No videos found!");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, videos, "Channel videos fetched successfully!"));
+});
 
 export { getChannelStats, getChannelVideos };
