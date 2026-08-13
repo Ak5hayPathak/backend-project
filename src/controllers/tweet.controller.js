@@ -28,7 +28,7 @@ const createTweet = asyncHandler(async (req, res) => {
     .json(new APIResponse(201, tweet, "Tweet created Successfully"));
 });
 
-const getUserTweet = asyncHandler(async (req, res) => {
+const getUserTweets = asyncHandler(async (req, res) => {
   const { userId } = req.body;
 
   if (!mongoose.isValidObjectId(userId)) {
@@ -143,4 +143,4 @@ const deleteTweet = asyncHandler(async (req, res) => {
       .json(new APIResponse(200, null, "Tweet deleted successfully!"));
 });
 
-export { createTweet, getUserTweet, updateTweet, deleteTweet };
+export { createTweet, getUserTweets, updateTweet, deleteTweet };
