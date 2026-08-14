@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 import { Playlist } from "../models/playlist.model.js";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
-import { APIError } from "../utils/ApiError.js";
-import { APIResponse } from "../utils/ApiResponse.js";
+import { APIError } from "../utils/APIError.js";
+import { APIResponse } from "../utils/APIResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const createPlaylist = asyncHandler(async (req, res) => {
@@ -42,7 +42,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     throw new APIError(400, "Playlist id is required!");
   }
 
-  if (!isValidObjectId(playlistId)) {
+  if (!mongoose.isValidObjectId(playlistId)) {
     throw new APIError(400, "Invalid playlist id!");
   }
 
@@ -159,7 +159,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200, playlist, "User playlist fetched successfully!")
+      new APIResponse(200, playlist, "User playlist fetched successfully!")
     );
 });
 
@@ -171,7 +171,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
   }
 
   if (!mongoose.isValidObjectId(userId)) {
-    throw new ApiError(400, "invalid user Id");
+    throw new APIError(400, "invalid user Id");
   }
 
   const user = await User.findById(userId);
@@ -257,7 +257,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, playlists, "Playlists fetched successfully!"));
+    .json(new APIResponse(200, playlists, "Playlists fetched successfully!"));
 });
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
@@ -270,7 +270,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     throw new APIError(400, "Playlist id is required!");
   }
 
-  if (!isValidObjectId(playlistId)) {
+  if (!mongoose.isValidObjectId(playlistId)) {
     throw new APIError(400, "Invalid playlist id!");
   }
 
@@ -307,7 +307,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(
+      new APIResponse(
         200,
         playlist,
         "Video added to the playlist successfully!"
@@ -325,7 +325,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     throw new APIError(400, "Playlist id is required!");
   }
 
-  if (!isValidObjectId(playlistId)) {
+  if (!mongoose.isValidObjectId(playlistId)) {
     throw new APIError(400, "Invalid playlist id!");
   }
 
@@ -356,7 +356,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(
+      new APIResponse(
         200,
         playlist,
         "Video removed from the playlist successfully!"
@@ -374,7 +374,7 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     throw new APIError(400, "Playlist id is required!");
   }
 
-  if (!isValidObjectId(playlistId)) {
+  if (!mongoose.isValidObjectId(playlistId)) {
     throw new APIError(400, "Invalid playlist id!");
   }
 
@@ -406,7 +406,7 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     throw new APIError(400, "Playlist id is required!");
   }
 
-  if (!isValidObjectId(playlistId)) {
+  if (!mongoose.isValidObjectId(playlistId)) {
     throw new APIError(400, "Invalid playlist id!");
   }
 
