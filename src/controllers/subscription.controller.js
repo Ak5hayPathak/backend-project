@@ -12,7 +12,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     throw new APIError(400, "Channel id is required!");
   }
 
-  if (!isValidObjectId(channelId)) {
+  if (!mongoose.isValidObjectId(channelId)) {
     throw new APIError(400, "Invalid channel id!");
   }
 
@@ -52,9 +52,21 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   }
 });
 
-const getUserChannelSubscribers = asyncHandler(async (req, res) => {
+const getChannelSubscribers = asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new APIError(401, "Unauthorized request!");
+  }
+
+  const { channelId } = req.params;
+
+  if (!mongoose.isValidObjectId(channelId)) {
+    throw new APIError(400, "Invalid channel ID");
+  }
+
+  const channel = await User.findById(channelId).select("_id");
+
+  if (!channel) {
+    throw new APIError(404, "Channel not found");
   }
 
   const { page = 1, limit = 20, sortType = "desc" } = req.query;
@@ -63,7 +75,7 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     Subscription.aggregate([
       {
         $match: {
-          channel: new mongoose.Types.ObjectId(req.user._id),
+          channel: new mongoose.Types.ObjectId(channelId),
         },
       },
 
@@ -117,13 +129,25 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     throw new APIError(401, "Unauthorized request!");
   }
 
+  const { userId } = req.params;
+
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new APIError(400, "Invalid user ID");
+  }
+
+  const channel = await User.findById(userId).select("_id");
+
+  if (!channel) {
+    throw new APIError(404, "User not found");
+  }
+
   const { page = 1, limit = 20, sortType = "desc" } = req.query;
 
   const subscribedChannels = await Subscription.aggregatePaginate(
     Subscription.aggregate([
       {
         $match: {
-          subscriber: new mongoose.Types.ObjectId(req.user._id),
+          subscriber: new mongoose.Types.ObjectId(userId),
         },
       },
 
@@ -176,4 +200,4 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     );
 });
 
-export {toggleSubscription, getSubscribedChannels, getUserChannelSubscribers};
+export { toggleSubscription, getSubscribedChannels, getChannelSubscribers };
