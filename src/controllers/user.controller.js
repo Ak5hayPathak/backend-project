@@ -372,7 +372,7 @@ const updateFiles = asyncHandler(async (req, res) => {
     try {
       await deleteFromCloudinary(oldAvatar);
     } catch (err) {
-      throw new APIError(500, err.message);;
+      throw new APIError(500, err.message);
     }
   }
 
@@ -380,7 +380,7 @@ const updateFiles = asyncHandler(async (req, res) => {
     try {
       await deleteFromCloudinary(oldcoverImg);
     } catch (err) {
-      throw new APIError(500, err.message);;
+      throw new APIError(500, err.message);
     }
   }
 
@@ -467,12 +467,17 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         _id: new mongoose.Types.ObjectId(req.user._id),
       },
     },
+
+    {
+      $unwind: "$watchHistory",
+    },
+
     {
       $lookup: {
         from: "videos",
-        localField: "watchHistory",
+        localField: "watchHistory.video",
         foreignField: "_id",
-        as: "watchHistory",
+        as: "videoDetails",
         pipeline: [
           {
             $lookup: {
@@ -501,17 +506,23 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         ],
       },
     },
+
+    {
+      $unwind: "$videoDetails",
+    },
+
+    {
+      $project: {
+        _id: 0,
+        video: "$videoDetails",
+        watchedAt: "$watchHistory.watchedAt",
+      },
+    },
   ]);
 
   return res
     .status(200)
-    .json(
-      new APIResponse(
-        200,
-        user[0].watchHistory,
-        "Watch history fetched successfully"
-      )
-    );
+    .json(new APIResponse(200, user, "Watch history fetched successfully"));
 });
 
 export {

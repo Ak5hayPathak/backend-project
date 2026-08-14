@@ -4,10 +4,17 @@ import { User } from "../models/user.model.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from "../utils/cloudinary.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  let {
     page = 1,
     limit = 10,
     query,
@@ -18,6 +25,9 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
   const pipeline = [];
 
+  if (!userId) {
+    userId = req.user._id;
+  }
   // Search by title or description
   if (query) {
     pipeline.push({
@@ -39,6 +49,10 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
   // Filter by owner (optional)
   if (userId) {
+    if (!mongoose.isValidObjectId(userId)) {
+      throw new APIError(400, "Invalid user ID");
+    }
+
     pipeline.push({
       $match: {
         owner: new mongoose.Types.ObjectId(userId),
@@ -415,4 +429,11 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, video, "Publish status updated successfully!"));
 });
 
-export {getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo, togglePublishStatus};
+export {
+  getAllVideos,
+  publishAVideo,
+  getVideoById,
+  updateVideo,
+  deleteVideo,
+  togglePublishStatus,
+};
