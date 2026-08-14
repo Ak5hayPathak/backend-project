@@ -57,7 +57,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
     throw new APIError(400, "Comment id is required!");
   }
 
-  if (!isValidObjectId(commentId)) {
+  if (!mongoose.isValidObjectId(commentId)) {
     throw new APIError(400, "Invalid comment id!");
   }
 
