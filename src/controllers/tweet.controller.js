@@ -29,10 +29,10 @@ const createTweet = asyncHandler(async (req, res) => {
 });
 
 const getUserTweets = asyncHandler(async (req, res) => {
-  const { userId } = req.body;
+  const { userId } = req.params;
 
   if (!mongoose.isValidObjectId(userId)) {
-    throw new ApiError(400, "Invalid User ID");
+    throw new APIError(400, "Invalid User ID");
   }
 
   const tweets = await Tweet.aggregate([
@@ -77,7 +77,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, tweets, "Tweets fetched successfully"));
+    .json(new APIResponse(200, tweets, "Tweets fetched successfully"));
 });
 
 const updateTweet = asyncHandler(async (req, res) => {
@@ -87,7 +87,7 @@ const updateTweet = asyncHandler(async (req, res) => {
     throw new APIError(400, "Tweet id is required!");
   }
 
-  if (!isValidObjectId(tweetId)) {
+  if (!mongoose.isValidObjectId(tweetId)) {
     throw new APIError(400, "Invalid tweet id!");
   }
 
@@ -123,7 +123,7 @@ const deleteTweet = asyncHandler(async (req, res) => {
     throw new APIError(400, "Tweet id is required!");
   }
 
-  if (!isValidObjectId(tweetId)) {
+  if (!mongoose.isValidObjectId(tweetId)) {
     throw new APIError(400, "Invalid tweet id!");
   }
 
