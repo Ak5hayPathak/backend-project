@@ -287,7 +287,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     throw new APIError(400, "Video id is required!");
   }
 
-  if (!isValidObjectId(videoId)) {
+  if (!mongoose.isValidObjectId(videoId)) {
     throw new APIError(400, "Invalid video id!");
   }
 
@@ -342,7 +342,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     throw new APIError(400, "Video id is required!");
   }
 
-  if (!isValidObjectId(videoId)) {
+  if (!mongoose.isValidObjectId(videoId)) {
     throw new APIError(400, "Invalid video id!");
   }
 
