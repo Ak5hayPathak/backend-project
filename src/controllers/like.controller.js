@@ -14,7 +14,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     throw new APIError(400, "Video id is required!");
   }
 
-  if (!isValidObjectId(videoId)) {
+  if (!mongoose.isValidObjectId(videoId)) {
     throw new APIError(400, "Invalid video id!");
   }
 
@@ -100,7 +100,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     throw new APIError(400, "Tweet id is required!");
   }
 
-  if (!isValidObjectId(tweetId)) {
+  if (!mongoose.isValidObjectId(tweetId)) {
     throw new APIError(400, "Invalid tweet id!");
   }
 
