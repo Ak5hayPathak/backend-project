@@ -140,6 +140,7 @@ const getLikedVideos = asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new APIError(401, "Unauthorized Request!");
   }
+
   const { page = 1, limit = 10, sortType = "desc" } = req.query;
 
   const likedVideos = await Like.aggregatePaginate(
@@ -225,4 +226,90 @@ const getLikedVideos = asyncHandler(async (req, res) => {
     );
 });
 
-export { toggleVideoLike, toggleCommentLike, toggleTweetLike, getLikedVideos };
+const getLikedTweets = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized Request!");
+  }
+  const { page = 1, limit = 10, sortType = "desc" } = req.query;
+
+  const likedTweets = await Like.aggregatePaginate(
+    Like.aggregate([
+      {
+        $match: {
+          likedBy: new mongoose.Types.ObjectId(req.user._id),
+          tweet: {
+            $exists: true,
+          },
+        },
+      },
+
+      {
+        $lookup: {
+          from: "tweets",
+          localField: "tweet",
+          foreignField: "_id",
+          as: "tweets",
+          pipeline: [
+            {
+              $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+              },
+            },
+
+            {
+              $unwind: "$ownerDetails",
+            },
+
+            {
+              $project: {
+                content: 1,
+                ownerDetails: {
+                  username: 1,
+                  avatar: 1,
+                  fullName: 1,
+                },
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unwind: "$tweets",
+      },
+
+      {
+        $sort: {
+          createdAt: sortType === "asc" ? 1 : -1,
+        },
+      },
+      {
+        $project: {
+          _id: "$tweets._id",
+          content: "$tweets.content",
+          ownerDetails: "$tweets.ownerDetails",
+        },
+      },
+    ]),
+
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
+
+  if (likedTweets.docs.length === 0) {
+    throw new APIError(404, "No liked tweets found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(200, likedTweets, "liked tweets fetched successfully")
+    );
+});
+
+export { toggleVideoLike, toggleCommentLike, toggleTweetLike, getLikedVideos, getLikedTweets };
