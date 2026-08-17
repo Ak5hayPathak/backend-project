@@ -1,4 +1,4 @@
-import mongoose, { isValidObjectId } from "mongoose";
+import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
 import { APIError } from "../utils/APIError.js";
@@ -49,7 +49,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
   // Filter by owner (optional)
   if (userId) {
-    if (!mongoose.isValidObjectId(userId)) {
+    if (!mongoose.mongoose.isValidObjectId(userId)) {
       throw new APIError(400, "Invalid user ID");
     }
 
@@ -173,7 +173,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     throw new APIError(400, "Video id is required!");
   }
 
-  if (!isValidObjectId(videoId)) {
+  if (!mongoose.isValidObjectId(videoId)) {
     throw new APIError(400, "Invalid video id!");
   }
 
@@ -291,7 +291,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     throw new APIError(400, "Video id is required!");
   }
 
-  if (!isValidObjectId(videoId)) {
+  if (!mongoose.isValidObjectId(videoId)) {
     throw new APIError(400, "Invalid video id!");
   }
 
@@ -362,7 +362,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
     throw new APIError(400, "Video id is required!");
   }
 
-  if (!isValidObjectId(videoId)) {
+  if (!mongoose.isValidObjectId(videoId)) {
     throw new APIError(400, "Invalid video id!");
   }
 
@@ -408,7 +408,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     throw new APIError(400, "Video id is required!");
   }
 
-  if (!isValidObjectId(videoId)) {
+  if (!mongoose.isValidObjectId(videoId)) {
     throw new APIError(400, "Invalid video id!");
   }
 
