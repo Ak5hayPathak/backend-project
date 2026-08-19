@@ -5,6 +5,7 @@ import {
   isValidPhone,
   isValidFullName,
 } from "../utils/validation.js";
+import { APIError } from "../utils/APIError.js";
 
 const validateRegisterUser = (req, res, next) => {
   const { fullName, email, username, phone, password } = req.body;

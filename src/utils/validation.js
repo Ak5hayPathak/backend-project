@@ -3,7 +3,7 @@ const isValidEmail = (email) => {
 };
 
 const isValidUsername = (username) => {
-  return /^[a-zA-Z0-9_]{3,20}$/.test(username);
+  return /^[a-zA-Z0-9_.]{3,20}$/.test(username);
 };
 
 const isValidPassword = (password) => {
