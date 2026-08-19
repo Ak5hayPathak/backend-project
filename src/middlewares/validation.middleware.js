@@ -2,41 +2,51 @@ import {
   isValidEmail,
   isValidUsername,
   isValidPassword,
-  isValidPhone,
+  // isValidPhone,
   isValidFullName,
 } from "../utils/validation.js";
 import { APIError } from "../utils/APIError.js";
+import { deleteLocalFiles } from "../utils/fileCleanup.js";
 
-const validateRegisterUser = (req, res, next) => {
-  const { fullName, email, username, phone, password } = req.body;
+const validateRegisterUser = async (req, res, next) => {
+  try {
+    const { fullName, email, username, password } = req.body;
 
-  if (!isValidFullName(fullName)) {
-    throw new APIError(400, "Invalid full name");
+    if (!isValidFullName(fullName)) {
+      await deleteLocalFiles(req.files);
+      throw new APIError(400, "Invalid full name");
+    }
+
+    if (!isValidEmail(email)) {
+      await deleteLocalFiles(req.files);
+      throw new APIError(400, "Invalid email");
+    }
+
+    if (!isValidUsername(username)) {
+      await deleteLocalFiles(req.files);
+      throw new APIError(
+        400,
+        "Username must be 3-20 characters and contain only letters, numbers, underscores and dots"
+      );
+    }
+
+    // if (!isValidPhone(phone)) {
+    //   await deleteLocalFiles(req.files);
+    //   throw new APIError(400, "Invalid phone number");
+    // }
+
+    if (!isValidPassword(password)) {
+      await deleteLocalFiles(req.files);
+      throw new APIError(
+        400,
+        "Password must be at least 8 characters and contain uppercase, lowercase, and a number"
+      );
+    }
+
+    next();
+  } catch (error) {
+    next(error);
   }
-
-  if (!isValidEmail(email)) {
-    throw new APIError(400, "Invalid email");
-  }
-
-  if (!isValidUsername(username)) {
-    throw new APIError(
-      400,
-      "Username must be 3-20 characters and contain only letters, numbers, and underscores"
-    );
-  }
-
-  if (!isValidPhone(phone)) {
-    throw new APIError(400, "Invalid phone number");
-  }
-
-  if (!isValidPassword(password)) {
-    throw new APIError(
-      400,
-      "Password must be at least 8 characters and contain uppercase, lowercase, and a number"
-    );
-  }
-
-  next();
 };
 
 const validateLoginUser = (req, res, next) => {
