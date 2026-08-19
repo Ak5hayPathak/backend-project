@@ -62,6 +62,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     {
       $match: {
         _id: new mongoose.Types.ObjectId(playlistId),
+        isPublic: true, // matched if it is public
       },
     },
 
@@ -152,8 +153,8 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     },
   ]);
 
-  if (playlist.length === 0) {
-    throw new APIError(404, "Playlist not found!");
+  if (!playlist.length) {
+    throw new APIError(404, "Playlist not found or is private!");
   }
 
   return res
@@ -187,6 +188,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
       {
         $match: {
           owner: new mongoose.Types.ObjectId(userId),
+          isPublic: true, // only public playlists are matched
         },
       },
 
@@ -439,12 +441,36 @@ const updatePlaylist = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
+    .json(new APIResponse(200, playlist, "Playlist updated successfully!"));
+});
+
+const toggleVisibility = asyncHandler(async (req, res) => {
+  const { playlistId } = req.params;
+
+  if (!playlistId) {
+    throw new APIError(400, "Playlist id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(playlistId)) {
+    throw new APIError(400, "Invalid playlist id!");
+  }
+
+  const playlist = await Playlist.findOne({
+    _id: playlistId,
+    owner: req.user._id,
+  });
+
+  if (!playlist) {
+    throw new APIError(404, "Playlist not found or access denied!");
+  }
+
+  playlist.isPublic = !playlist.isPublic;
+  await playlist.save();
+
+  return res
+    .status(200)
     .json(
-      new APIResponse(
-        200,
-        playlist,
-        "Playlist updated successfully!"
-      )
+      new APIResponse(200, playlist, "Visibility status updated successfully!")
     );
 });
 
@@ -456,4 +482,5 @@ export {
   removeVideoFromPlaylist,
   deletePlaylist,
   updatePlaylist,
+  toggleVisibility,
 };
