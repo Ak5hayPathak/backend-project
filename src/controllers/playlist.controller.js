@@ -263,27 +263,8 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 });
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
-  if (!req.user) {
-    throw new APIError(401, "Unauthorized request!");
-  }
-  const { videoId, playlistId } = req.params;
-
-  if (!playlistId) {
-    throw new APIError(400, "Playlist id is required!");
-  }
-
-  if (!mongoose.isValidObjectId(playlistId)) {
-    throw new APIError(400, "Invalid playlist id!");
-  }
-
-  const playlist = await Playlist.findOne({
-    _id: playlistId,
-    owner: req.user._id,
-  });
-
-  if (!playlist) {
-    throw new APIError(404, "Playlist not found or access denied!");
-  }
+  const { videoId } = req.params;
+  const playlist = req.playlist;
 
   if (!videoId) {
     throw new APIError(400, "Video id is required!");
@@ -304,6 +285,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
   }
 
   playlist.videos.push(videoId);
+
   await playlist.save();
 
   return res
@@ -318,27 +300,8 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 });
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
-  if (!req.user) {
-    throw new APIError(401, "Unauthorized request!");
-  }
-  const { videoId, playlistId } = req.params;
-
-  if (!playlistId) {
-    throw new APIError(400, "Playlist id is required!");
-  }
-
-  if (!mongoose.isValidObjectId(playlistId)) {
-    throw new APIError(400, "Invalid playlist id!");
-  }
-
-  const playlist = await Playlist.findOne({
-    _id: playlistId,
-    owner: req.user._id,
-  });
-
-  if (!playlist) {
-    throw new APIError(404, "Playlist not found or access denied!");
-  }
+  const { videoId } = req.params;
+  const playlist = req.playlist;
 
   if (!videoId) {
     throw new APIError(400, "Video id is required!");
@@ -353,6 +316,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
   }
 
   playlist.videos.pull(videoId);
+
   await playlist.save();
 
   return res
@@ -397,29 +361,8 @@ const deletePlaylist = asyncHandler(async (req, res) => {
 });
 
 const updatePlaylist = asyncHandler(async (req, res) => {
-  if (!req.user) {
-    throw new APIError(401, "Unauthorized request!");
-  }
-
-  const { playlistId } = req.params;
+  const playlist = req.playlist;
   const { name, description } = req.body;
-
-  if (!playlistId) {
-    throw new APIError(400, "Playlist id is required!");
-  }
-
-  if (!mongoose.isValidObjectId(playlistId)) {
-    throw new APIError(400, "Invalid playlist id!");
-  }
-
-  const playlist = await Playlist.findOne({
-    _id: playlistId,
-    owner: req.user._id,
-  });
-
-  if (!playlist) {
-    throw new APIError(404, "Playlist not found or access denied!");
-  }
 
   if (name === undefined && description === undefined) {
     throw new APIError(400, "At least one field is required!");

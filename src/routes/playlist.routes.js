@@ -10,6 +10,7 @@ import {
   updatePlaylist,
 } from "../controllers/playlist.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verifyPlaylistEditor } from "../middlewares/authPlaylist.middleware.js";
 
 const router = Router();
 
@@ -20,11 +21,15 @@ router.route("/").post(createPlaylist);
 router
   .route("/:playlistId")
   .get(getPlaylistById)
-  .patch(updatePlaylist)
+  .patch(verifyPlaylistEditor, updatePlaylist)
   .delete(deletePlaylist);
 
-router.route("/add/:videoId/:playlistId").patch(addVideoToPlaylist);
-router.route("/remove/:videoId/:playlistId").patch(removeVideoFromPlaylist);
+router
+  .route("/add/:videoId/:playlistId")
+  .patch(verifyPlaylistEditor, addVideoToPlaylist);
+router
+  .route("/remove/:videoId/:playlistId")
+  .patch(verifyPlaylistEditor, removeVideoFromPlaylist);
 
 router.route("/user/:userId").get(getUserPlaylists);
 router.route("/:playlistId/visibility").patch(toggleVisibility);
