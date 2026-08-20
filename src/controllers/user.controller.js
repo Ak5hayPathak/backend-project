@@ -521,6 +521,10 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, user, "Watch history fetched successfully"));
 });
 
+
+//clear watch history
+//remove video from watch history (by id)
+
 export {
   registerUser,
   loginUser,
