@@ -6,6 +6,15 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
 
+// sendInvitation
+// acceptInvitation
+// rejectInvitation
+// cancelInvitation
+// getAllPendingInvitations
+// getAllAcceptedInvitations
+// getAllCollaborators
+// removeCollaborator
+
 const sendInvitation = asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new APIError(401, "Unauthorized request!");
@@ -49,20 +58,21 @@ const sendInvitation = asyncHandler(async (req, res) => {
   }
 
   const invitation = await PlaylistCollaborator.create({
+    invitedBy: req.user._id,
     playlist: playlistId,
     user: userId,
   });
 
-//   if (!invitation) {
-//     throw new APIError(
-//       500,
-//       "Something went wrong while creating the invitation!"
-//     );
-//   }
+  //   if (!invitation) {
+  //     throw new APIError(
+  //       500,
+  //       "Something went wrong while creating the invitation!"
+  //     );
+  //   }
 
   return res
     .status(201)
     .json(new APIResponse(201, invitation, "Invitation sent successfully!"));
 });
 
-export {sendInvitation};
+export { sendInvitation };

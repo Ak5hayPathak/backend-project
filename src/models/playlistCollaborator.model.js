@@ -2,6 +2,12 @@ import mongoose, { Schema } from "mongoose";
 
 const playlistCollaboratorSchema = new Schema(
   {
+    invitedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
     playlist: {
       type: Schema.Types.ObjectId,
       ref: "Playlist",
