@@ -204,10 +204,61 @@ const getInvitationById = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, invitation, "Invitation fetched successfully!"));
 });
 
+const removeCollaborator = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const { playlistId, userId } = req.params;
+
+  if (!playlistId) {
+    throw new APIError(400, "Playlist id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(playlistId)) {
+    throw new APIError(400, "Invalid playlist id!");
+  }
+
+  if (!userId) {
+    throw new APIError(400, "User id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new APIError(400, "Invalid user id!");
+  }
+
+  // Only the playlist owner can remove collaborators
+  const playlist = await Playlist.findOne({
+    _id: playlistId,
+    owner: req.user._id,
+  });
+
+  if (!playlist) {
+    throw new APIError(404, "Playlist not found or access denied!");
+  }
+
+  const collaboration = await PlaylistCollaborator.findOne({
+    playlist: playlistId,
+    user: userId,
+    status: "accepted",
+  });
+
+  if (!collaboration) {
+    throw new APIError(404, "Collaborator not found!");
+  }
+
+  await collaboration.deleteOne();
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, null, "Collaborator removed successfully!"));
+});
+
 export {
   sendInvitation,
   acceptInvitation,
   rejectInvitation,
   cancelInvitation,
   getInvitationById,
+  removeCollaborator,
 };
