@@ -732,6 +732,68 @@ const getAllSentAcceptedInvitations = asyncHandler(async (req, res) => {
     );
 });
 
+const getAllCollaborators = asyncHandler(async (req, res) => {
+  const { playlistId } = req.params;
+  const { page = 1, limit = 10, sortType = "desc" } = req.query;
+
+  if (!playlistId) {
+    throw new APIError(400, "Playlist id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(playlistId)) {
+    throw new APIError(400, "Invalid playlist id!");
+  }
+
+  const collaborators = await PlaylistCollaborator.aggregatePaginate(
+    PlaylistCollaborator.aggregate([
+      {
+        $match: {
+          playlist: new mongoose.Types.ObjectId(playlistId),
+          status: "accepted",
+        },
+      },
+
+      {
+        $sort: {
+          createdAt: sortType === "asc" ? 1 : -1,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userDetails",
+          pipeline: [
+            {
+              $project: {
+                username: 1,
+                fullName: 1,
+                avatar: 1,
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unwind: "$userDetails",
+      },
+    ]),
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(200, collaborators, "Collaborators fetched successfully!")
+    );
+});
+
 export {
   sendInvitation,
   acceptInvitation,
@@ -745,4 +807,5 @@ export {
   getAllSentInvitations,
   getAllSentPendingInvitations,
   getAllSentAcceptedInvitations,
+  getAllCollaborators,
 };
