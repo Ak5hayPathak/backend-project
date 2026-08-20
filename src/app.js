@@ -26,7 +26,8 @@ import commentRouter from "./routes/comment.routes.js";
 import likeRouter from "./routes/like.routes.js";
 import playlistRouter from "./routes/playlist.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
-import watchLater from "./routes/watchLater.routes.js"
+import watchLater from "./routes/watchLater.routes.js";
+import playlistCollaborator from "./routes/playlistCollaborator.routes.js";
 
 //routes declaration
 app.use("/api/v1/users", userRouter);
@@ -38,6 +39,7 @@ app.use("/api/v1/likes", likeRouter);
 app.use("/api/v1/playlist", playlistRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/watch-later", watchLater);
+app.use("/api/v1/playlist-collab", playlistCollaborator);
 
 // https://localhost:8000/api/v1/users/register
 // https://localhost:8000/api/v1/users/login

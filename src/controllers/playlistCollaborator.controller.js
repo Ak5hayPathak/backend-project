@@ -6,15 +6,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
 
-// sendInvitation
-// acceptInvitation
-// rejectInvitation
-// cancelInvitation
-// getInvitationById
-// getAllPendingInvitations
-// getAllAcceptedInvitations
-// getAllCollaborators
-// removeCollaborator
 
 const sendInvitation = asyncHandler(async (req, res) => {
   if (!req.user) {
