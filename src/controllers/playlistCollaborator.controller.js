@@ -254,6 +254,84 @@ const removeCollaborator = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, null, "Collaborator removed successfully!"));
 });
 
+const getAllInvitations = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const { page = 1, limit = 10, sortType = "desc" } = req.query;
+
+  const invitations = await PlaylistCollaborator.aggregatePaginate(
+    PlaylistCollaborator.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(req.user._id),
+        },
+      },
+
+      {
+        $sort: {
+          createdAt: sortType === "asc" ? 1 : -1,
+        },
+      },
+
+      {
+        $lookup: {
+          from: "playlists",
+          localField: "playlist",
+          foreignField: "_id",
+          as: "playlistDetails",
+          pipeline: [
+            {
+              $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "userDetails",
+                pipeline: [
+                  {
+                    $project: {
+                      username: 1,
+                      avatar: 1,
+                      fullName: 1,
+                    },
+                  },
+                ],
+              },
+            },
+
+            {
+              $unwind: "$userDetails",
+            },
+
+            {
+              $project: {
+                name: 1,
+                owner: 1,
+                userDetails: 1,
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unwind: "$playlistDetails",
+      },
+    ]),
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(200, invitations, "Invitations fetched successfully!")
+    );
+});
+
 export {
   sendInvitation,
   acceptInvitation,
