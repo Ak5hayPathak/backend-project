@@ -110,4 +110,39 @@ const acceptInvitation = asyncHandler(async (req, res) => {
     );
 });
 
-export { sendInvitation, acceptInvitation };
+const rejectInvitation = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const { invitationId } = req.params;
+
+  if (!invitationId) {
+    throw new APIError(400, "Invitation id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(invitationId)) {
+    throw new APIError(400, "Invalid invitation id!");
+  }
+
+  const invitation = await PlaylistCollaborator.findOne({
+    _id: invitationId,
+    user: req.user._id,
+    status: "pending",
+  });
+
+  if (!invitation) {
+    throw new APIError(404, "Invitation not found!");
+  }
+
+  await invitation.deleteOne();
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(200, null, "Invitation rejected successfully!")
+    );
+});
+
+export { sendInvitation, acceptInvitation, rejectInvitation };
+
