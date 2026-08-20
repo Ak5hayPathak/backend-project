@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const playlistCollaboratorSchema = new Schema(
   {
@@ -32,6 +33,8 @@ const playlistCollaboratorSchema = new Schema(
 );
 
 playlistCollaboratorSchema.index({ playlist: 1, user: 1 }, { unique: true });
+
+playlistCollaboratorSchema.plugin(mongooseAggregatePaginate);
 
 export const PlaylistCollaborator = mongoose.model(
   "PlaylistCollaborator",
