@@ -73,6 +73,8 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImageLocalPath = req.files.coverImage[0].path;
   }
 
+  //or const coverImageLocalPath = req.files?.coverImage?[0]?.path;
+
   if (!avatarLocalPath) {
     throw new APIError(400, "Avatar file is required!");
   }
@@ -389,7 +391,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
 
   if (!username?.trim()) {
-    throw new ApiError(400, "username is missing");
+    throw new APIError(400, "username is missing");
   }
 
   const channel = await User.aggregate([
@@ -446,7 +448,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   ]);
 
   if (!channel?.length) {
-    throw new ApiError(404, "channel does not exists");
+    throw new APIError(404, "channel does not exists");
   }
 
   return res
