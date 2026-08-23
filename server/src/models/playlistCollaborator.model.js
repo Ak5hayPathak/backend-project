@@ -1,0 +1,42 @@
+import mongoose, { Schema } from "mongoose";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+
+const playlistCollaboratorSchema = new Schema(
+  {
+    invitedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    playlist: {
+      type: Schema.Types.ObjectId,
+      ref: "Playlist",
+      required: true,
+    },
+
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "accepted"],
+      default: "pending",
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+playlistCollaboratorSchema.index({ playlist: 1, user: 1 }, { unique: true });
+
+playlistCollaboratorSchema.plugin(mongooseAggregatePaginate);
+
+export const PlaylistCollaborator = mongoose.model(
+  "PlaylistCollaborator",
+  playlistCollaboratorSchema
+);
