@@ -1,5 +1,6 @@
-// require('dotenv').config({path: './env'});
 import dotenv from "dotenv";
+import http from "http";
+
 import connectDB from "./db/connection.js";
 import { app } from "./app.js";
 
@@ -9,14 +10,17 @@ dotenv.config({
 
 const port = process.env.PORT || 9000;
 
+//separate HTTP server from Express app
+const httpServer = http.createServer(app);
+
 connectDB()
   .then(() => {
-    app.on("error", (error) => {
+    httpServer.on("error", (error) => {
       console.error("ERR: ", error);
       throw error;
     });
 
-    app.listen(port, () => {
+    httpServer.listen(port, () => {
       console.log(`Server listening at http://localhost:${port}`);
     });
   })
@@ -24,21 +28,38 @@ connectDB()
     console.log(`MONGODB Connection Failed!! - ${err}`);
   });
 
+//-----------------------------------------------------------------------------------------------------------------------------------------------
+// Express automatically creates an HTTP server internally when app.listen() is called
 
+// // require('dotenv').config({path: './env'});
+// import dotenv from "dotenv";
+// import connectDB from "./db/connection.js";
+// import { app } from "./app.js";
 
+// dotenv.config({
+//   path: "./.env",
+// });
 
+// const port = process.env.PORT || 9000;
 
+// connectDB()
+//   .then(() => {
+//     app.on("error", (error) => {
+//       console.error("ERR: ", error);
+//       throw error;
+//     });
 
+//     app.listen(port, () => {
+//       console.log(`Server listening at http://localhost:${port}`);
+//     });
+//   })
+//   .catch((err) => {
+//     console.log(`MONGODB Connection Failed!! - ${err}`);
+//   });
 
+// --------------------------------------------------------------------------------------------------------------------------------
+//The other way to start the server and connecting it to the database using IIFE
 
-
-
-
-
-
-
-
-  
 // import express from 'express';
 // const app = express()
 // ;(async () => {
