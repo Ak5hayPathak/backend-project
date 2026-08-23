@@ -10,6 +10,14 @@ const initializeSocketIO = (httpServer) => {
   io.on("connection", (socket) => {
     console.log("Client connected: ", socket.id);
 
+    socket.on("msg", (data) => {
+      console.log("Message recieved from client: ", data);
+
+      socket.emit("reply", {
+        message: "Hello from server!",
+      });
+    });
+
     socket.on("disconnect", () => {
       console.log("Client disconnected: ", socket.id);
     });

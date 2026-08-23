@@ -18,6 +18,14 @@
 
       socket.on("connect", () => {
         console.log("Connected: ", socket.id);
+
+        socket.emit("msg", {
+          message: "Hello from client",
+        });
+      });
+
+      socket.on("reply", (data) => {
+        console.log("Reply received:", data);
       });
 
       socket.on("disconnect", () => {
