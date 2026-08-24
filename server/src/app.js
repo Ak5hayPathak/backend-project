@@ -27,7 +27,8 @@ import likeRouter from "./routes/like.routes.js";
 import playlistRouter from "./routes/playlist.routes.js";
 import dashboardRouter from "./routes/dashboard.routes.js";
 import watchLater from "./routes/watchLater.routes.js";
-import playlistCollaborator from "./routes/playlistCollaborator.routes.js";
+import playlistCollaboratorRouter from "./routes/playlistCollaborator.routes.js";
+import notificationRouter from "./routes/notification.routes.js";
 
 //routes declaration
 app.use("/api/v1/users", userRouter);
@@ -39,7 +40,8 @@ app.use("/api/v1/likes", likeRouter);
 app.use("/api/v1/playlist", playlistRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/watch-later", watchLater);
-app.use("/api/v1/playlist-collab", playlistCollaborator);
+app.use("/api/v1/playlist-collab", playlistCollaboratorRouter);
+app.use("/api/v1/notifications", notificationRouter);
 
 // https://localhost:8000/api/v1/users/register
 // https://localhost:8000/api/v1/users/login
