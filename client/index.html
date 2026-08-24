@@ -10,26 +10,23 @@
 
     <!-- gives the browser the Socket.IO client library, so it knows 
     how to communicate with the Socket.IO server attached to your HTTP server. -->
-    <script src="http://localhost:9000/socket.io/socket.io.js"></script>
+    <script src="http://localhost:15000/socket.io/socket.io.js"></script>
 
     <script>
       //establish the connection
-      const socket = io("http://localhost:9000");
+      const socket = io("http://localhost:15000", {
+        auth: {
+          token:
+            "access_token",
+        },
+      });
 
       socket.on("connect", () => {
-        console.log("Connected: ", socket.id);
-
-        socket.emit("msg", {
-          message: "Hello from client",
-        });
+        console.log("Connected:", socket.id);
       });
 
-      socket.on("reply", (data) => {
-        console.log("Reply received:", data);
-      });
-
-      socket.on("disconnect", () => {
-        console.log("Disconnected");
+      socket.on("notification", (data) => {
+        console.log("🔔 New notification:", data);
       });
     </script>
   </body>

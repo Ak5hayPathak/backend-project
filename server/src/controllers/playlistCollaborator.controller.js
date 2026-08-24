@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { Notification } from "../models/notification.model.js";
+import { getSocketIO } from "../sockets/socket.manager.js";
 
 const sendInvitation = asyncHandler(async (req, res) => {
   if (!req.user) {
@@ -55,13 +56,17 @@ const sendInvitation = asyncHandler(async (req, res) => {
     user: userId,
   });
 
-  await Notification.create({
+  const notification = await Notification.create({
     recipient: userId,
     sender: req.user._id,
     type: "playlist_invitation",
     message: "You have been invited to collaborate on a playlist",
     resource: invitation._id,
   });
+
+  const io = getSocketIO();
+
+  io.to(`userId:${userId}`).emit("notification", notification);
 
   //   if (!invitation) {
   //     throw new APIError(
@@ -103,13 +108,17 @@ const acceptInvitation = asyncHandler(async (req, res) => {
   invitation.status = "accepted";
   await invitation.save();
 
-  await Notification.create({
+  const notification = await Notification.create({
     recipient: invitation.invitedBy,
     sender: req.user._id,
     type: "playlist_invitation_accepted",
     message: "Your playlist collaboration invitation was accepted",
     resource: invitation._id,
   });
+
+  const io = getSocketIO();
+
+  io.to(`userId:${invitation.invitedBy}`).emit("notification", notification);
 
   return res
     .status(200)
