@@ -62,4 +62,41 @@ const getUserNotifications = asyncHandler(async (req, res) => {
     );
 });
 
-export { getUserNotifications };
+const markNotificationAsRead = asyncHandler(async (req, res) => {
+  const { notificationId } = req.params;
+
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const notification = await Notification.findOneAndUpdate(
+    {
+      _id: notificationId,
+      recipient: req.user._id,
+    },
+    {
+      $set: {
+        isRead: true,
+      },
+    },
+    {
+      returnDocument: "after",
+    }
+  );
+
+  if (!notification) {
+    throw new APIError(404, "Notification not found!");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(
+        200,
+        notification,
+        "Notification marked as read successfully!"
+      )
+    );
+});
+
+export { getUserNotifications, markNotificationAsRead };
