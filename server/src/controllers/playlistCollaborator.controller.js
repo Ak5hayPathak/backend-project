@@ -5,7 +5,7 @@ import { User } from "../models/user.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
-
+import { Notification } from "../models/notification.model.js";
 
 const sendInvitation = asyncHandler(async (req, res) => {
   if (!req.user) {
@@ -55,6 +55,14 @@ const sendInvitation = asyncHandler(async (req, res) => {
     user: userId,
   });
 
+  await Notification.create({
+    recipient: userId,
+    sender: req.user._id,
+    type: "playlist_invitation",
+    message: "You have been invited to collaborate on a playlist",
+    resource: invitation._id,
+  });
+
   //   if (!invitation) {
   //     throw new APIError(
   //       500,
@@ -94,6 +102,14 @@ const acceptInvitation = asyncHandler(async (req, res) => {
 
   invitation.status = "accepted";
   await invitation.save();
+
+  await Notification.create({
+    recipient: invitation.invitedBy,
+    sender: req.user._id,
+    type: "playlist_invitation_accepted",
+    message: "Your playlist collaboration invitation was accepted",
+    resource: invitation._id,
+  });
 
   return res
     .status(200)
