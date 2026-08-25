@@ -128,8 +128,87 @@ const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
     );
 });
 
+const getUnreadNotifications = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const [result] = await Notification.aggregate([
+    {
+      $match: {
+        recipient: req.user._id,
+        isRead: false,
+      },
+    },
+
+    {
+      $facet: {
+        notifications: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "sender",
+              foreignField: "_id",
+              as: "senderDetails",
+            },
+          },
+
+          {
+            $unwind: "$senderDetails",
+          },
+
+          {
+            $project: {
+              recipient: 1,
+              type: 1,
+              message: 1,
+              resource: 1,
+              isRead: 1,
+              createdAt: 1,
+              updatedAt: 1,
+
+              sender: {
+                _id: "$senderDetails._id",
+                username: "$senderDetails.username",
+                fullName: "$senderDetails.fullName",
+                avatar: "$senderDetails.avatar",
+              },
+            },
+          },
+
+          {
+            $sort: {
+              createdAt: -1,
+            },
+          },
+        ],
+
+        count: [
+          {
+            $count: "total",
+          },
+        ],
+      },
+    },
+  ]);
+
+  const unreadCount = result.count[0]?.total || 0;
+
+  return res.status(200).json(
+    new APIResponse(
+      200,
+      {
+        unreadCount,
+        notifications: result.notifications,
+      },
+      "Unread notifications fetched successfully!"
+    )
+  );
+});
+
 export {
   getUserNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  getUnreadNotifications,
 };
