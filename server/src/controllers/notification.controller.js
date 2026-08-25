@@ -9,56 +9,68 @@ const getUserNotifications = asyncHandler(async (req, res) => {
     throw new APIError(401, "Unauthorized request!");
   }
 
-  const notifications = await Notification.aggregate([
-    {
-      $match: {
-        recipient: req.user._id,
-      },
-    },
+  const { page = 1, limit = 10 } = req.query;
 
-    {
-      $lookup: {
-        from: "users",
-        localField: "sender",
-        foreignField: "_id",
-        as: "senderDetails",
-      },
-    },
-
-    {
-      $unwind: "$senderDetails",
-    },
-
-    {
-      $project: {
-        recipient: 1,
-        type: 1,
-        message: 1,
-        resource: 1,
-        isRead: 1,
-        createdAt: 1,
-        updatedAt: 1,
-
-        sender: {
-          _id: "$senderDetails._id",
-          username: "$senderDetails.username",
-          fullName: "$senderDetails.fullName",
-          avatar: "$senderDetails.avatar",
+  const notifications = await Notification.aggregatePaginate(
+    Notification.aggregate([
+      {
+        $match: {
+          recipient: req.user._id,
         },
       },
-    },
 
-    {
-      $sort: {
-        createdAt: -1,
+      {
+        $sort: {
+          createdAt: -1,
+        },
       },
-    },
-  ]);
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "sender",
+          foreignField: "_id",
+          as: "senderDetails",
+        },
+      },
+
+      {
+        $unwind: "$senderDetails",
+      },
+
+      {
+        $project: {
+          recipient: 1,
+          type: 1,
+          message: 1,
+          resource: 1,
+          isRead: 1,
+          createdAt: 1,
+          updatedAt: 1,
+
+          sender: {
+            _id: "$senderDetails._id",
+            username: "$senderDetails.username",
+            fullName: "$senderDetails.fullName",
+            avatar: "$senderDetails.avatar",
+          },
+        },
+      },
+    ]),
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
 
   return res
     .status(200)
     .json(
-      new APIResponse(200, notifications, "Notifications fetched successfully!")
+      new APIResponse(
+        200,
+        notifications,
+        "Notifications fetched successfully!"
+      )
     );
 });
 
@@ -133,74 +145,65 @@ const getUnreadNotifications = asyncHandler(async (req, res) => {
     throw new APIError(401, "Unauthorized request!");
   }
 
-  const [result] = await Notification.aggregate([
-    {
-      $match: {
-        recipient: req.user._id,
-        isRead: false,
+  const { page = 1, limit = 10 } = req.query;
+
+  const notifications = await Notification.aggregatePaginate(
+    Notification.aggregate([
+      {
+        $match: {
+          recipient: req.user._id,
+          isRead: false,
+        },
       },
-    },
 
-    {
-      $facet: {
-        notifications: [
-          {
-            $lookup: {
-              from: "users",
-              localField: "sender",
-              foreignField: "_id",
-              as: "senderDetails",
-            },
-          },
-
-          {
-            $unwind: "$senderDetails",
-          },
-
-          {
-            $project: {
-              recipient: 1,
-              type: 1,
-              message: 1,
-              resource: 1,
-              isRead: 1,
-              createdAt: 1,
-              updatedAt: 1,
-
-              sender: {
-                _id: "$senderDetails._id",
-                username: "$senderDetails.username",
-                fullName: "$senderDetails.fullName",
-                avatar: "$senderDetails.avatar",
-              },
-            },
-          },
-
-          {
-            $sort: {
-              createdAt: -1,
-            },
-          },
-        ],
-
-        count: [
-          {
-            $count: "total",
-          },
-        ],
+      {
+        $sort: {
+          createdAt: -1,
+        },
       },
-    },
-  ]);
 
-  const unreadCount = result.count[0]?.total || 0;
+      {
+        $lookup: {
+          from: "users",
+          localField: "sender",
+          foreignField: "_id",
+          as: "senderDetails",
+        },
+      },
+
+      {
+        $unwind: "$senderDetails",
+      },
+
+      {
+        $project: {
+          recipient: 1,
+          type: 1,
+          message: 1,
+          resource: 1,
+          isRead: 1,
+          createdAt: 1,
+          updatedAt: 1,
+
+          sender: {
+            _id: "$senderDetails._id",
+            username: "$senderDetails.username",
+            fullName: "$senderDetails.fullName",
+            avatar: "$senderDetails.avatar",
+          },
+        },
+      },
+    ]),
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
 
   return res.status(200).json(
     new APIResponse(
       200,
-      {
-        unreadCount,
-        notifications: result.notifications,
-      },
+      notifications,
       "Unread notifications fetched successfully!"
     )
   );
