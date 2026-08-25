@@ -1,9 +1,12 @@
 import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
+import { Notification } from "../models/notification.model.js";
+import { Subscription } from "../models/subscription.model.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { getSocketIO } from "../sockets/socket.manager.js";
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
@@ -116,8 +119,6 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
   const videoFile = await uploadOnCloudinary(videoFileLocalPath);
 
-  let isPublished;
-
   if (!videoFile) {
     throw new APIError(500, "Failed to upload video on cloudinary!");
   }
@@ -157,6 +158,35 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
   if (!publishedVideo) {
     throw new APIError(500, "Something went wrong while uploading the video!");
+  }
+
+  const subscriptions = await Subscription.find({
+    channel: userId,
+  }).select("subscriber");
+
+  const notifications = subscriptions.map((subscription) => ({
+    recipient: subscription.subscriber,
+    sender: userId,
+    type: "new_video",
+    message: `${req.user.username} posted a new video`,
+    resource: publishedVideo._id,
+  }));
+
+  if (notifications.length > 0) {
+    // Bulk insert notifications instead of creating them individually for each subscriber using inserMany()
+    await Notification.insertMany(notifications);
+  }
+
+  const io = getSocketIO();
+
+  for (const subscription of subscriptions) {
+    io.to(`userId:${subscription.subscriber}`).emit("notification", {
+      recipient: subscription.subscriber,
+      sender: userId,
+      type: "new_video",
+      message: `${req.user.username} posted a new video`,
+      resource: publishedVideo._id,
+    });
   }
 
   return res
