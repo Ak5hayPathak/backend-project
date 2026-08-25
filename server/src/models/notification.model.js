@@ -25,6 +25,7 @@ const notificationSchema = new Schema(
         "comment_reply",
         "video_like",
         "comment_like",
+        "tweet_like",
       ],
       required: true,
     },

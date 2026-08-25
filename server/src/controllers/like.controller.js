@@ -6,8 +6,14 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.model.js";
 import { Comment } from "../models/comment.model.js";
 import { Tweet } from "../models/tweet.model.js";
+import { Notification } from "../models/notification.model.js";
+import { getSocketIO } from "../sockets/socket.manager.js";
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized Request!");
+  }
+
   const { videoId } = req.params;
 
   if (!videoId) {
@@ -24,10 +30,6 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     throw new APIError(404, "Video not found!");
   }
 
-  if (!req.user) {
-    throw new APIError(401, "Unauthorized Request!");
-  }
-
   const alreadyLiked = await Like.findOne({
     video: videoId,
     likedBy: req.user._id,
@@ -39,10 +41,24 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
       .status(200)
       .json(new APIResponse(200, null, "Video unliked successfully"));
   } else {
-    await Like.create({
+    const like = await Like.create({
       video: videoId,
       likedBy: req.user._id,
     });
+
+    if (video.owner.toString() !== req.user._id.toString()) {
+      const notification = await Notification.create({
+        recipient: video.owner,
+        sender: req.user._id,
+        type: "video_like",
+        message: `${req.user.username} liked your video`,
+        resource: like._id,
+      });
+
+      const io = getSocketIO();
+
+      io.to(`userId:${video.owner}`).emit("notification", notification);
+    }
 
     return res
       .status(201)
@@ -51,6 +67,10 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 });
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized Request!");
+  }
+
   const { commentId } = req.params;
 
   if (!commentId) {
@@ -67,10 +87,6 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
     throw new APIError(404, "Comment not found!");
   }
 
-  if (!req.user) {
-    throw new APIError(401, "Unauthorized Request!");
-  }
-
   const alreadyLiked = await Like.findOne({
     comment: commentId,
     likedBy: req.user._id,
@@ -82,10 +98,24 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
       .status(200)
       .json(new APIResponse(200, null, "Comment unliked successfully"));
   } else {
-    await Like.create({
+    const like = await Like.create({
       comment: commentId,
       likedBy: req.user._id,
     });
+
+    if (comment.owner.toString() !== req.user._id.toString()) {
+      const notification = await Notification.create({
+        recipient: comment.owner,
+        sender: req.user._id,
+        type: "comment_like",
+        message: `${req.user.username} liked your comment`,
+        resource: comment._id,
+      });
+
+      const io = getSocketIO();
+
+      io.to(`userId:${comment.owner}`).emit("notification", notification);
+    }
 
     return res
       .status(201)
@@ -95,6 +125,10 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
 
 const toggleTweetLike = asyncHandler(async (req, res) => {
   const { tweetId } = req.params;
+
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized Request!");
+  }
 
   if (!tweetId) {
     throw new APIError(400, "Tweet id is required!");
@@ -110,10 +144,6 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     throw new APIError(404, "Tweet not found!");
   }
 
-  if (!req.user) {
-    throw new APIError(401, "Unauthorized Request!");
-  }
-
   const alreadyLiked = await Like.findOne({
     tweet: tweetId,
     likedBy: req.user._id,
@@ -125,10 +155,24 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
       .status(200)
       .json(new APIResponse(200, null, "Tweet unliked successfully"));
   } else {
-    await Like.create({
+    const like = await Like.create({
       tweet: tweetId,
       likedBy: req.user._id,
     });
+
+    if (tweet.owner.toString() !== req.user._id.toString()) {
+      const notification = await Notification.create({
+        recipient: tweet.owner,
+        sender: req.user._id,
+        type: "tweet_like",
+        message: `${req.user.username} liked your tweet`,
+        resource: tweet._id,
+      });
+
+      const io = getSocketIO();
+
+      io.to(`userId:${tweet.owner}`).emit("notification", notification);
+    }
 
     return res
       .status(201)
@@ -312,4 +356,10 @@ const getLikedTweets = asyncHandler(async (req, res) => {
     );
 });
 
-export { toggleVideoLike, toggleCommentLike, toggleTweetLike, getLikedVideos, getLikedTweets };
+export {
+  toggleVideoLike,
+  toggleCommentLike,
+  toggleTweetLike,
+  getLikedVideos,
+  getLikedTweets,
+};

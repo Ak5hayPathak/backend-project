@@ -5,6 +5,8 @@ import { APIResponse } from "../utils/APIResponse.js";
 import { Comment } from "../models/comment.model.js";
 import { User } from "../models/user.model.js";
 import { Video } from "../models/video.model.js";
+import { Notification } from "../models/notification.model.js";
+import { getSocketIO } from "../sockets/socket.manager.js";
 
 const getVideoComments = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
@@ -139,6 +141,18 @@ const addComment = asyncHandler(async (req, res) => {
   }
 
   const populatedComment = await comment.populate("owner", "username avatar");
+
+  const notification = await Notification.create({
+    recipient: videoExists.owner,
+    sender: userId,
+    type: "video_comment",
+    message: `${req.user.username} commented on your video`,
+    resource: comment._id,
+  });
+
+  const io = getSocketIO();
+
+  io.to(`userId:${videoExists.owner}`).emit("notification", notification);
 
   return res
     .status(201)
