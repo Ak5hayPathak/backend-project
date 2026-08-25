@@ -4,8 +4,14 @@ import { Subscription } from "../models/subscription.model.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { Notification } from "../models/notification.model.js";
+import { getSocketIO } from "../sockets/socket.manager.js";
 
 const toggleSubscription = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized Request!");
+  }
+
   const { channelId } = req.params;
 
   if (!channelId) {
@@ -20,10 +26,6 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 
   if (!channel) {
     throw new APIError(404, "Channel not found!");
-  }
-
-  if (!req.user) {
-    throw new APIError(401, "Unauthorized Request!");
   }
 
   if (channelId === req.user._id.toString()) {
@@ -41,10 +43,22 @@ const toggleSubscription = asyncHandler(async (req, res) => {
       .status(200)
       .json(new APIResponse(200, null, "Channel unsubscribed successfully"));
   } else {
-    await Subscription.create({
+    const subscription = await Subscription.create({
       channel: channelId,
       subscriber: req.user._id,
     });
+
+    const notification = await Notification.create({
+      recipient: channelId,
+      sender: req.user._id,
+      type: "new_subscriber",
+      message: `${req.user.username} subscribed to your channel`,
+      resource: subscription._id,
+    });
+
+    const io = getSocketIO();
+
+    io.to(`userId:${channelId}`).emit("notification", notification);
 
     return res
       .status(201)
