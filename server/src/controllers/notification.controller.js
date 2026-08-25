@@ -99,4 +99,37 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
     );
 });
 
-export { getUserNotifications, markNotificationAsRead };
+const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const notifications = await Notification.updateMany(
+    {
+      recipient: req.user._id,
+      isRead: false,
+    },
+
+    {
+      $set: {
+        isRead: true,
+      },
+    }
+  );
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(
+        200,
+        notifications,
+        "All notifications marked as read successfully!"
+      )
+    );
+});
+
+export {
+  getUserNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+};
