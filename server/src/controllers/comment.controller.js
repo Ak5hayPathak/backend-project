@@ -188,6 +188,7 @@ const updateComment = asyncHandler(async (req, res) => {
   }
 
   comment.content = content;
+  comment.isEdited = true;
   await comment.save();
 
   return res
