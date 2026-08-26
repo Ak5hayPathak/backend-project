@@ -223,4 +223,73 @@ const deleteComment = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, null, "Comment deleted successfully!"));
 });
 
+const addReply = asyncHandler(async (req, res) => {
+  const { content } = req.body;
+  const { commentId } = req.params;
+
+  if (!content?.trim()) {
+    throw new APIError(400, "Content is required!");
+  }
+
+  if (!commentId) {
+    throw new APIError(400, "Comment id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(commentId)) {
+    throw new APIError(400, "Invalid comment id!");
+  }
+
+  // Find the comment/reply being replied to
+  const parentComment = await Comment.findById(commentId);
+
+  if (!parentComment) {
+    throw new APIError(404, "Comment not found!");
+  }
+
+  const userId = req.user?._id;
+
+  if (!userId) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  // A reply is simply another Comment with a parentComment
+  const reply = await Comment.create({
+    content: content.trim(),
+    video: parentComment.video,
+    owner: userId,
+    parentComment: parentComment._id,
+  });
+
+  if (!reply) {
+    throw new APIError(500, "Reply can't be created!");
+  }
+
+  const populatedReply = await reply.populate(
+    "owner",
+    "username avatar fullName"
+  );
+
+  // Don't send a notification when replying to yourself
+  if (parentComment.owner.toString() !== userId.toString()) {
+    const notification = await Notification.create({
+      recipient: parentComment.owner,
+      sender: userId,
+      type: "comment_reply",
+      message: `${req.user.username} replied to your comment`,
+      resource: reply._id,
+    });
+
+    const io = getSocketIO();
+
+    io.to(`userId:${parentComment.owner.toString()}`).emit(
+      "notification",
+      notification
+    );
+  }
+
+  return res
+    .status(201)
+    .json(new APIResponse(201, populatedReply, "Reply created successfully!"));
+});
+
 export { getVideoComments, addComment, updateComment, deleteComment };

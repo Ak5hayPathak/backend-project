@@ -20,6 +20,12 @@ const commentSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    parentComment: {
+      // self-referencing
+      type: Schema.Types.ObjectId,
+      ref: "Comment",
+      default: null,
+    },
   },
   {
     timestamps: true,

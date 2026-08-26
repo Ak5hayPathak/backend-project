@@ -27,7 +27,6 @@ const notificationSchema = new Schema(
         "comment_like",
         "tweet_like",
         "new_tweet",
-        
       ],
       required: true,
     },
