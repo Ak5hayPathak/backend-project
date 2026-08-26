@@ -163,37 +163,40 @@ const addComment = asyncHandler(async (req, res) => {
 
 const updateComment = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
+  const { content } = req.body;
 
   if (!commentId) {
-    throw new APIError(400, "Comment id is required!");
+    throw new APIError(400, "Comment or reply id is required!");
   }
 
   if (!mongoose.isValidObjectId(commentId)) {
-    throw new APIError(400, "Invalid comment id!");
+    throw new APIError(400, "Invalid comment or reply id!");
   }
 
+  if (!content?.trim()) {
+    throw new APIError(400, "Content is required!");
+  }
+
+  // Works for both top-level comments and replies
   const comment = await Comment.findOne({
     _id: commentId,
     owner: req.user._id,
   });
 
   if (!comment) {
-    throw new APIError(404, "Comment not found or access denied!");
+    throw new APIError(404, "Comment or reply not found or access denied!");
   }
 
-  const { content } = req.body;
-
-  if (!content?.trim()) {
-    throw new APIError(400, "Content is required!");
-  }
-
-  comment.content = content;
+  comment.content = content.trim();
   comment.isEdited = true;
+
   await comment.save();
 
   return res
     .status(200)
-    .json(new APIResponse(200, comment, "Comment updated successfully!"));
+    .json(
+      new APIResponse(200, comment, "Comment or reply updated successfully!")
+    );
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
@@ -213,14 +216,46 @@ const deleteComment = asyncHandler(async (req, res) => {
   });
 
   if (!comment) {
-    throw new APIError(404, "Comment not found or access denied!");
+    throw new APIError(404, "Comment or reply not found or access denied!");
   }
 
-  await comment.deleteOne();
+  const [commentWithReplies] = await Comment.aggregate([
+    {
+      $match: {
+        _id: comment._id,
+      },
+    },
+    {
+      $graphLookup: {
+        from: "comments",
+        startWith: "$_id",
+        connectFromField: "_id",
+        connectToField: "parentComment",
+        as: "replies",
+      },
+    },
+  ]);
+
+  const commentIdsToDelete = [
+    comment._id,
+    ...commentWithReplies.replies.map((reply) => reply._id), //returns an array of reply ids that is destructured
+  ];
+
+  await Comment.deleteMany({
+    _id: {
+      $in: commentIdsToDelete,
+    },
+  });
 
   return res
     .status(200)
-    .json(new APIResponse(200, null, "Comment deleted successfully!"));
+    .json(
+      new APIResponse(
+        200,
+        null,
+        "Comment and all its replies deleted successfully!"
+      )
+    );
 });
 
 const addReply = asyncHandler(async (req, res) => {
@@ -292,4 +327,96 @@ const addReply = asyncHandler(async (req, res) => {
     .json(new APIResponse(201, populatedReply, "Reply created successfully!"));
 });
 
-export { getVideoComments, addComment, updateComment, deleteComment };
+const getReplies = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+
+  if (!commentId) {
+    throw new APIError(400, "Comment id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(commentId)) {
+    throw new APIError(400, "Invalid comment id!");
+  }
+
+  // This can be either a top-level comment or a reply
+  const parentComment = await Comment.findById(commentId);
+
+  if (!parentComment) {
+    throw new APIError(404, "Comment not found!");
+  }
+
+  const { page = 1, limit = 10, sortType = "desc" } = req.query;
+
+  const replies = await Comment.aggregatePaginate(
+    Comment.aggregate([
+      {
+        $match: {
+          parentComment: new mongoose.Types.ObjectId(commentId),
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "ownerDetails",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                username: 1,
+                avatar: 1,
+                fullName: 1,
+              },
+            },
+          ],
+        },
+      },
+
+      {
+        $unwind: "$ownerDetails",
+      },
+
+      {
+        $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "comment",
+          as: "likes",
+        },
+      },
+
+      {
+        $addFields: {
+          likesCount: {
+            $size: "$likes",
+          },
+          isLiked: {
+            $in: [new mongoose.Types.ObjectId(req.user._id), "$likes.likedBy"],
+          },
+        },
+      },
+
+      {
+        $sort: {
+          createdAt: sortType === "asc" ? 1 : -1,
+        },
+      },
+    ]),
+    {
+      page: Number(page),
+      limit: Number(limit),
+    }
+  );
+
+  if (replies.docs.length === 0) {
+    throw new APIError(404, "No replies found!");
+  }
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, replies, "Replies fetched successfully!"));
+});
+
+export { getVideoComments, addComment, updateComment, deleteComment, addReply, getReplies };
