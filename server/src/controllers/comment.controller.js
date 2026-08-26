@@ -3,10 +3,113 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { Comment } from "../models/comment.model.js";
-import { User } from "../models/user.model.js";
 import { Video } from "../models/video.model.js";
 import { Notification } from "../models/notification.model.js";
 import { getSocketIO } from "../sockets/socket.manager.js";
+
+const getCommentById = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+
+  if (!commentId) {
+    throw new APIError(400, "Comment id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(commentId)) {
+    throw new APIError(400, "Invalid comment id!");
+  }
+
+  const [comment] = await Comment.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(commentId),
+      },
+    },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "ownerDetails",
+        pipeline: [
+          {
+            $project: {
+              _id: 1,
+              username: 1,
+              avatar: 1,
+              fullName: 1,
+            },
+          },
+        ],
+      },
+    },
+
+    {
+      $unwind: "$ownerDetails",
+    },
+
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "comment",
+        as: "likes",
+      },
+    },
+
+    {
+      $addFields: {
+        likesCount: {
+          $size: "$likes",
+        },
+        isLiked: {
+          $in: [new mongoose.Types.ObjectId(req.user._id), "$likes.likedBy"],
+        },
+      },
+    },
+
+    {
+      $lookup: {
+        from: "comments",
+        localField: "_id",
+        foreignField: "parentComment",
+        as: "replies",
+      },
+    },
+
+    {
+      $addFields: {
+        repliesCount: {
+          $size: "$replies",
+        },
+      },
+    },
+
+    {
+      $project: {
+        content: 1,
+        video: 1,
+        owner: 1,
+        isEdited: 1,
+        parentComment: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        ownerDetails: 1,
+        likesCount: 1,
+        isLiked: 1,
+        repliesCount: 1,
+      },
+    },
+  ]);
+
+  if (!comment) {
+    throw new APIError(404, "Comment not found!");
+  }
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, comment, "Comment fetched successfully!"));
+});
 
 const getVideoComments = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
@@ -419,4 +522,47 @@ const getReplies = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, replies, "Replies fetched successfully!"));
 });
 
-export { getVideoComments, addComment, updateComment, deleteComment, addReply, getReplies };
+const getRepliesCount = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+
+  if (!commentId) {
+    throw new APIError(400, "Comment id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(commentId)) {
+    throw new APIError(400, "Invalid comment id!");
+  }
+
+  const commentExists = await Comment.exists({
+    _id: commentId,
+  });
+
+  if (!commentExists) {
+    throw new APIError(404, "Comment not found!");
+  }
+
+  const repliesCount = await Comment.countDocuments({
+    parentComment: commentId,
+  });
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(
+        200,
+        { repliesCount },
+        "Replies count fetched successfully!"
+      )
+    );
+});
+
+export {
+  getCommentById,
+  getVideoComments,
+  addComment,
+  updateComment,
+  deleteComment,
+  addReply,
+  getReplies,
+  getRepliesCount,
+};
