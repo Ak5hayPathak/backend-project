@@ -602,4 +602,6 @@ export {
   updateFiles,
   getUserChannelProfile,
   getWatchHistory,
+  clearWatchHistory,
+  removeVideoFromWatchHistory,
 };

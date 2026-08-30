@@ -10,6 +10,8 @@ import {
   registerUser,
   updateFiles,
   updateUserDetails,
+  clearWatchHistory,
+  removeVideoFromWatchHistory,
 } from "../controllers/user.controller.js";
 import {
   validateLoginUser,
@@ -63,4 +65,7 @@ router.route("/update-files").patch(
 );
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 router.route("/history").get(verifyJWT, getWatchHistory);
+router.route("/history/clear").get(verifyJWT, clearWatchHistory);
+router.route("/history/clear/:videoId").get(verifyJWT, removeVideoFromWatchHistory);
+
 export default router;
