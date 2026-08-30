@@ -17,7 +17,7 @@
       const socket = io("http://localhost:15000", {
         auth: {
           token:
-            "access_token",
+            "access-token",
         },
       });
 
@@ -26,7 +26,7 @@
       });
 
       socket.on("notification", (data) => {
-        console.log("🔔 New notification:", data);
+        console.log("New notification:", data);
       });
     </script>
   </body>
