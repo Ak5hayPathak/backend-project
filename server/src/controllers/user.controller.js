@@ -44,9 +44,7 @@ const registerUser = asyncHandler(async (req, res) => {
   //console.log("email: ", email);
 
   if (
-    [fullName, email, username, password].some(
-      (field) => field?.trim() === ""
-    )
+    [fullName, email, username, password].some((field) => field?.trim() === "")
   ) {
     throw new APIError(400, "All fields are required!");
   }
@@ -523,7 +521,32 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, user, "Watch history fetched successfully"));
 });
 
-//clear watch history
+const clearWatchHistory = asyncHandler(async (req, res) => {
+  if (!req.user?._id) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        watchHistory: [],
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  if (!user) {
+    throw new APIError(404, "User not found!");
+  }
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, null, "Watch history cleared successfully"));
+});
+
 //remove video from watch history (by id)
 
 export {
