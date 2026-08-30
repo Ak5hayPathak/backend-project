@@ -547,7 +547,49 @@ const clearWatchHistory = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, null, "Watch history cleared successfully"));
 });
 
-//remove video from watch history (by id)
+const removeVideoFromWatchHistory = asyncHandler(async (req, res) => {
+  if (!req.user?._id) {
+    throw new APIError(401, "Unauthorized request!");
+  }
+
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    throw new APIError(400, "Video id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new APIError(400, "Invalid video id!");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $pull: {
+        watchHistory: {
+          video: videoId,
+        },
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  if (!user) {
+    throw new APIError(404, "User not found!");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(
+        200,
+        null,
+        "Video removed from watch history successfully"
+      )
+    );
+});
 
 export {
   registerUser,
