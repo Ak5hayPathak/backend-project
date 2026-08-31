@@ -143,3 +143,91 @@ const runFFprobe = (filePath) => {
     });
   });
 };
+
+// Run FFmpeg and handle its completion with a Promise
+const runFFmpeg = (args) => {
+  return new Promise((resolve, reject) => {
+    const ffmpeg = spawn("ffmpeg", args);
+
+    let errorOutput = "";
+
+    ffmpeg.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+    });
+
+    ffmpeg.on("error", (error) => {
+      reject(error);
+    });
+
+    ffmpeg.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(
+          new Error(`FFmpeg failed with exit code ${code}\n${errorOutput}`)
+        );
+      }
+    });
+  });
+};
+
+// generates an HLS version of the video for a specific quality
+const generateVideoQuality = async (inputPath, quality, videoId) => {
+  const qualityDirectory = path.join("output", videoId, quality.name);
+
+  fs.mkdirSync(qualityDirectory, {
+    recursive: true,
+  });
+
+  const playlistPath = path.join(qualityDirectory, "playlist.m3u8");
+  const segmentPath = path.join(qualityDirectory, "segment%d.ts");
+
+  await runFFmpeg([
+    "-i",
+    inputPath,
+    //Input video file
+
+    "-vf",
+    `scale=-2:${quality.height}`,
+    //resized the video
+
+    "-c:v",
+    "libx264",
+    //uses the H.264 video codec
+
+    "-b:v",
+    quality.bitrate,
+    //sets the video bitrate
+
+    "-c:a",
+    "aac",
+    //uses AAC audio encoding
+
+    "-b:a",
+    "128k",
+    //sets audio bitrate to 128 kbps
+
+    "-hls_time",
+    "4",
+    //creates HLS segments of approximately 4 seconds
+
+    "-force_key_frames",
+    "expr:gte(t,n_forced*4)",
+    // forces keyframes approximately every 4 seconds
+    // so the video can be segmented properly
+
+    "-hls_list_size",
+    "0",
+    //keeps all segments in the playlist
+
+    "-hls_segment_filename",
+    segmentPath,
+    //tells FFmpeg where to save the .ts segment files
+
+    playlistPath,
+    //the final output playlist
+  ]);
+
+  console.log(`${quality.name} generated successfully!`);
+};
+
