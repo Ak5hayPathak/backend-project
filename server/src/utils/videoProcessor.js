@@ -3,6 +3,13 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
+
+const PROCESSED_VIDEOS_DIRECTORY = path.join(
+  "public",
+  "temp",
+  "processed"
+);
+
 //video resolutions available to generate
 const AVAILABLE_QUALITIES = [
   //144p
@@ -176,7 +183,7 @@ const runFFmpeg = (args) => {
 
 // generates an HLS version of the video for a specific quality
 const generateVideoQuality = async (inputPath, quality, videoId) => {
-  const qualityDirectory = path.join("output", videoId, quality.name);
+  const qualityDirectory = path.join(PROCESSED_VIDEOS_DIRECTORY, videoId, quality.name);
 
   fs.mkdirSync(qualityDirectory, {
     recursive: true,
@@ -246,12 +253,12 @@ const createMasterPlaylist = (qualities, videoId) => {
     playlist += `${quality.name}/playlist.m3u8\n`;
   }
 
-  fs.writeFileSync(path.join("output", videoId, "master.m3u8"), playlist);
+  fs.writeFileSync(path.join(PROCESSED_VIDEOS_DIRECTORY, videoId, "master.m3u8"), playlist);
 };
 
 //cleans up incomplete video output
 const cleanupVideoOutput = (videoId) => {
-  const outputDirectory = path.join("output", videoId);
+  const outputDirectory = path.join(PROCESSED_VIDEOS_DIRECTORY, videoId);
 
   if (fs.existsSync(outputDirectory)) {
     fs.rmSync(outputDirectory, {
@@ -263,42 +270,7 @@ const cleanupVideoOutput = (videoId) => {
   }
 };
 
-const processVideo = async (inputPath) => {
-  const videoId = crypto.randomUUID();
-  try {
-    const metadata = await runFFprobe(inputPath);
-
-    const videoStream = metadata.streams.find(
-      (stream) => stream.codec_type === "video"
-    );
-
-    const supportedQualities = getSupportedQualities(videoStream.height);
-
-    console.log("Generating: ", supportedQualities);
-
-    await Promise.all(
-      supportedQualities.map((quality) =>
-        generateVideoQuality(inputPath, quality, videoId)
-      )
-    );
-
-    createMasterPlaylist(supportedQualities, videoId);
-    console.log("All qualities generated successfully!");
-
-    return {
-      videoId,
-      outputDirectory: path.join("output", videoId),
-      masterPlaylistPath: path.join("output", videoId, "master.m3u8"),
-      qualities: supportedQualities.map((quality) => quality.name),
-    };
-  } catch (error) {
-    console.error("Video processing failed:");
-    console.error(error.message);
-    cleanupVideoOutput(videoId);
-    throw error;
-  }
-};
-
+//randomly captures a video frame to generate thumbnail
 const generateThumbnail = async (inputPath, outputPath) => {
   try {
     const metadata = await runFFprobe(inputPath);
@@ -330,5 +302,42 @@ const generateThumbnail = async (inputPath, outputPath) => {
     throw error;
   }
 };
+
+const processVideo = async (inputPath) => {
+  const videoId = crypto.randomUUID();
+  try {
+    const metadata = await runFFprobe(inputPath);
+
+    const videoStream = metadata.streams.find(
+      (stream) => stream.codec_type === "video"
+    );
+
+    const supportedQualities = getSupportedQualities(videoStream.height);
+
+    console.log("Generating: ", supportedQualities);
+
+    await Promise.all(
+      supportedQualities.map((quality) =>
+        generateVideoQuality(inputPath, quality, videoId)
+      )
+    );
+
+    createMasterPlaylist(supportedQualities, videoId);
+    console.log("All qualities generated successfully!");
+
+    return {
+      videoId,
+      outputDirectory: path.join(PROCESSED_VIDEOS_DIRECTORY, videoId),
+      masterPlaylistPath: path.join(PROCESSED_VIDEOS_DIRECTORY, videoId, "master.m3u8"),
+      qualities: supportedQualities.map((quality) => quality.name),
+    };
+  } catch (error) {
+    console.error("Video processing failed:");
+    console.error(error.message);
+    cleanupVideoOutput(videoId);
+    throw error;
+  }
+};
+
 
 export { processVideo, generateThumbnail };
