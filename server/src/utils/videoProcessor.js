@@ -231,3 +231,31 @@ const generateVideoQuality = async (inputPath, quality, videoId) => {
   console.log(`${quality.name} generated successfully!`);
 };
 
+//creates the master HLS playlist acts like a directory/map 
+// that tells the video player which qualities are available. 
+// The player can then choose the appropriate quality, enabling adaptive bitrate streaming
+const createMasterPlaylist = (qualities, videoId) => {
+    let playlist = "#EXTM3U\n#EXT-X-VERSION:3\n";
+
+    for(const quality of qualities){
+        playlist += `#EXT-X-STREAM-INF:BANDWIDTH=${quality.bandwidth},`;
+        playlist += `RESOLUTION=${quality.width}x${quality.height}\n`;
+        playlist += `${quality.name}/playlist.m3u8\n`;
+    }
+
+    fs.writeFileSync(join("output", videoId, "master.m3u8"), playlist);
+}
+
+//cleans up incomplete video output
+const cleanupVideoOutput = (videoId) => {
+    const outputDirectory = join("output", videoId);
+
+    if(fs.existsSync(outputDirectory)){
+        fs.rmSync(outputDirectory, {
+            recursive: true,
+            force: true,
+        });
+        
+        console.log("Incomplete video output cleaned up.");
+    }
+}
