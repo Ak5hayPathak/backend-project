@@ -298,3 +298,5 @@ const processVideo = async (inputPath) => {
     throw error;
   }
 };
+
+export { processVideo };
