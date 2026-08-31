@@ -299,4 +299,36 @@ const processVideo = async (inputPath) => {
   }
 };
 
-export { processVideo };
+const generateThumbnail = async (inputPath, outputPath) => {
+  try {
+    const metadata = await runFFprobe(inputPath);
+
+    const duration = Number(metadata.format.duration);
+
+    const randomTimestamp = Math.random() * duration;
+
+    await runFFmpeg([
+      "-ss",
+      randomTimestamp.toString(),
+
+      "-i",
+      inputPath,
+
+      "-frames:v",
+      "1",
+
+      "-update",
+      "1",
+
+      outputPath,
+    ]);
+
+    console.log("Thumbnail generated successfully!");
+  } catch (error) {
+    console.error("Thumbnail generation failed:");
+    console.error(error.message);
+    throw error;
+  }
+};
+
+export { processVideo, generateThumbnail };
