@@ -8,8 +8,8 @@ const AVAILABLE_QUALITIES = [
   //144p
   {
     name: "144p",
-    height: "144",
-    width: "256",
+    height: 144,
+    width: 256,
     bitrate: "150k",
     bandwidth: 150000,
   },
@@ -17,8 +17,8 @@ const AVAILABLE_QUALITIES = [
   //240p
   {
     name: "240p",
-    height: "240",
-    width: "426",
+    height: 240,
+    width: 426,
     bitrate: "300k",
     bandwidth: 300000,
   },
@@ -26,17 +26,26 @@ const AVAILABLE_QUALITIES = [
   //360p
   {
     name: "360p",
-    height: "360",
-    width: "640",
+    height: 360,
+    width: 640,
     bitrate: "500k",
     bandwidth: 500000,
+  },
+
+  //480p
+  {
+    name: "480p",
+    width: 854,
+    height: 480,
+    bitrate: "800k",
+    bandwidth: 800000,
   },
 
   //720p
   {
     name: "720p",
-    height: "720",
-    width: "1280",
+    height: 720,
+    width: 1280,
     bitrate: "1500k",
     bandwidth: 1500000,
   },
@@ -44,8 +53,8 @@ const AVAILABLE_QUALITIES = [
   //1080p
   {
     name: "1080p",
-    height: "1080",
-    width: "1920",
+    height: 1080,
+    width: 1920,
     bitrate: "3000k",
     bandwidth: 3000000,
   },
@@ -89,36 +98,30 @@ const runFFprobe = (filePath) => {
   return new Promise((resolve, reject) => {
     const ffprobe = spawn("ffprobe", [
       "-v",
-      "quiet",
-      //Hide unnecessary logs
+      "error",
+      // Hide unnecessary logs
 
-      "print_format",
+      "-print_format",
       "json",
-      //Return the result as JSON
+      // Return the result as JSON
 
       "-show_format",
-      //Get general file information
-      // (duration, size, bitrate, etc.)
+      // Get general file information
 
       "-show_streams",
-      //Get information about video/audio streams
-      // (resolution, codec, fps, etc.)
+      // Get information about video/audio streams
 
       filePath,
-      //The video file to analyze
+      // The video file to analyze
     ]);
 
     let output = "";
     let errorOutput = "";
 
-    // data coming from the standard output (stdout)
-    // of the ffProbe process. by the time FFprobe finishes
-    // output contains the complete JSON metadata produced by FFprobe.
     ffprobe.stdout.on("data", (data) => {
       output += data.toString();
     });
 
-    // Collect error output from FFprobe
     ffprobe.stderr.on("data", (data) => {
       errorOutput += data.toString();
     });
@@ -231,31 +234,67 @@ const generateVideoQuality = async (inputPath, quality, videoId) => {
   console.log(`${quality.name} generated successfully!`);
 };
 
-//creates the master HLS playlist acts like a directory/map 
-// that tells the video player which qualities are available. 
+//creates the master HLS playlist acts like a directory/map
+// that tells the video player which qualities are available.
 // The player can then choose the appropriate quality, enabling adaptive bitrate streaming
 const createMasterPlaylist = (qualities, videoId) => {
-    let playlist = "#EXTM3U\n#EXT-X-VERSION:3\n";
+  let playlist = "#EXTM3U\n#EXT-X-VERSION:3\n";
 
-    for(const quality of qualities){
-        playlist += `#EXT-X-STREAM-INF:BANDWIDTH=${quality.bandwidth},`;
-        playlist += `RESOLUTION=${quality.width}x${quality.height}\n`;
-        playlist += `${quality.name}/playlist.m3u8\n`;
-    }
+  for (const quality of qualities) {
+    playlist += `#EXT-X-STREAM-INF:BANDWIDTH=${quality.bandwidth},`;
+    playlist += `RESOLUTION=${quality.width}x${quality.height}\n`;
+    playlist += `${quality.name}/playlist.m3u8\n`;
+  }
 
-    fs.writeFileSync(join("output", videoId, "master.m3u8"), playlist);
-}
+  fs.writeFileSync(path.join("output", videoId, "master.m3u8"), playlist);
+};
 
 //cleans up incomplete video output
 const cleanupVideoOutput = (videoId) => {
-    const outputDirectory = join("output", videoId);
+  const outputDirectory = path.join("output", videoId);
 
-    if(fs.existsSync(outputDirectory)){
-        fs.rmSync(outputDirectory, {
-            recursive: true,
-            force: true,
-        });
-        
-        console.log("Incomplete video output cleaned up.");
-    }
-}
+  if (fs.existsSync(outputDirectory)) {
+    fs.rmSync(outputDirectory, {
+      recursive: true,
+      force: true,
+    });
+
+    console.log("Incomplete video output cleaned up.");
+  }
+};
+
+const processVideo = async (inputPath) => {
+  const videoId = crypto.randomUUID();
+  try {
+    const metadata = await runFFprobe(inputPath);
+
+    const videoStream = metadata.streams.find(
+      (stream) => stream.codec_type === "video"
+    );
+
+    const supportedQualities = getSupportedQualities(videoStream.height);
+
+    console.log("Generating: ", supportedQualities);
+
+    await Promise.all(
+      supportedQualities.map((quality) =>
+        generateVideoQuality(inputPath, quality, videoId)
+      )
+    );
+
+    createMasterPlaylist(supportedQualities, videoId);
+    console.log("All qualities generated successfully!");
+
+    return {
+      videoId,
+      outputDirectory: path.join("output", videoId),
+      masterPlaylistPath: path.join("output", videoId, "master.m3u8"),
+      qualities: supportedQualities.map((quality) => quality.name),
+    };
+  } catch (error) {
+    console.error("Video processing failed:");
+    console.error(error.message);
+    cleanupVideoOutput(videoId);
+    throw error;
+  }
+};
