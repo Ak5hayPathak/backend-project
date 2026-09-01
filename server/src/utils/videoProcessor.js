@@ -6,7 +6,6 @@ import crypto from "crypto";
 const PROCESSED_VIDEOS_DIRECTORY = path.join(
   "server",
   "public",
-  "temp",
   "processed"
 );
 

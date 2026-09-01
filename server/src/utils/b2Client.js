@@ -6,6 +6,7 @@ dotenv.config();
 console.log("B2_REGION:", process.env.B2_REGION);
 console.log("B2_ENDPOINT:", process.env.B2_ENDPOINT);
 
+//backblaze connection
 const b2Client = new S3Client({
   endpoint: process.env.B2_ENDPOINT,
 
