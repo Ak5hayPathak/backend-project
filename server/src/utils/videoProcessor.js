@@ -3,8 +3,8 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
-
 const PROCESSED_VIDEOS_DIRECTORY = path.join(
+  "server",
   "public",
   "temp",
   "processed"
@@ -183,7 +183,11 @@ const runFFmpeg = (args) => {
 
 // generates an HLS version of the video for a specific quality
 const generateVideoQuality = async (inputPath, quality, videoId) => {
-  const qualityDirectory = path.join(PROCESSED_VIDEOS_DIRECTORY, videoId, quality.name);
+  const qualityDirectory = path.join(
+    PROCESSED_VIDEOS_DIRECTORY,
+    videoId,
+    quality.name
+  );
 
   fs.mkdirSync(qualityDirectory, {
     recursive: true,
@@ -253,7 +257,10 @@ const createMasterPlaylist = (qualities, videoId) => {
     playlist += `${quality.name}/playlist.m3u8\n`;
   }
 
-  fs.writeFileSync(path.join(PROCESSED_VIDEOS_DIRECTORY, videoId, "master.m3u8"), playlist);
+  fs.writeFileSync(
+    path.join(PROCESSED_VIDEOS_DIRECTORY, videoId, "master.m3u8"),
+    playlist
+  );
 };
 
 //cleans up incomplete video output
@@ -328,7 +335,11 @@ const processVideo = async (inputPath) => {
     return {
       videoId,
       outputDirectory: path.join(PROCESSED_VIDEOS_DIRECTORY, videoId),
-      masterPlaylistPath: path.join(PROCESSED_VIDEOS_DIRECTORY, videoId, "master.m3u8"),
+      masterPlaylistPath: path.join(
+        PROCESSED_VIDEOS_DIRECTORY,
+        videoId,
+        "master.m3u8"
+      ),
       qualities: supportedQualities.map((quality) => quality.name),
     };
   } catch (error) {
