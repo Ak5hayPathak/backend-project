@@ -4,7 +4,7 @@ import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 const videoSchema = new Schema(
   {
     videoFile: {
-      type: String, //cloudinary url
+      type: String, //Backblaze url
       required: true,
     },
     thumbnail: {
@@ -19,6 +19,10 @@ const videoSchema = new Schema(
     },
     duration: {
       type: Number,
+      required: true,
+    },
+    qualities: {
+      type: [String],
       required: true,
     },
     views: {
