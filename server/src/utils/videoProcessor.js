@@ -314,6 +314,8 @@ const processVideo = async (inputPath) => {
   try {
     const metadata = await runFFprobe(inputPath);
 
+    const duration = Number(metadata.format.duration);
+
     const videoStream = metadata.streams.find(
       (stream) => stream.codec_type === "video"
     );
@@ -337,9 +339,10 @@ const processVideo = async (inputPath) => {
       masterPlaylistPath: path.join(
         PROCESSED_VIDEOS_DIRECTORY,
         videoId,
-        "master.m3u8"
+        "master.m3u8",
       ),
       qualities: supportedQualities.map((quality) => quality.name),
+      duration,
     };
   } catch (error) {
     console.error("Video processing failed:");

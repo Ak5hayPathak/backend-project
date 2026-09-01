@@ -77,18 +77,14 @@ const deleteVideoDirectoryFromB2 = async (videoId) => {
           })
         );
 
-        console.log(
-          `Deleted ${objectsToDelete.length} file versions from B2`
-        );
+        console.log(`Deleted ${objectsToDelete.length} file versions from B2`);
       }
 
       keyMarker = listResponse.NextKeyMarker;
       versionIdMarker = listResponse.NextVersionIdMarker;
-
     } while (keyMarker);
 
     console.log(`Deleted all existing versions for video: ${videoId}`);
-
   } catch (error) {
     console.error("Failed to delete video versions from B2: ");
     throw error;
@@ -119,7 +115,11 @@ const uploadDirectoryToB2 = async (directoryPath, videoId, concurrency = 5) => {
     );
   }
 
+  const masterPlaylistPath = `videos/${videoId}/master.m3u8`;
+
   console.log("All files uploaded successfully!");
+
+  return masterPlaylistPath;
 };
 
 // const videoId = "f1d9ccf9-7f67-471d-a87b-b1cab3720124";
@@ -127,4 +127,4 @@ const uploadDirectoryToB2 = async (directoryPath, videoId, concurrency = 5) => {
 // const directoryPath = `./public/processed/${videoId}`;
 // await uploadDirectoryToB2(directoryPath, videoId);
 
-export {uploadDirectoryToB2, deleteVideoDirectoryFromB2};
+export { uploadDirectoryToB2, deleteVideoDirectoryFromB2 };
