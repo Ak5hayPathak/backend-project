@@ -2,7 +2,7 @@ import { processVideo } from "../utils/videoProcessor.js";
 import { uploadDirectoryToB2, deleteVideoDirectoryFromB2 } from "../utils/b2Uploader.js";
 import { deleteLocalHLS } from "../utils/fileCleanup.js";
 
-const processAndUploadVideo = async (inputPath, maxRetries = 50) => {
+const processAndUploadVideo = async (inputPath, maxRetries = 5) => {
   let videoInfo;
 
   try {
