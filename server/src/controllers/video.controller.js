@@ -11,6 +11,9 @@ import {
   uploadOnCloudinary,
   deleteFromCloudinary,
 } from "../utils/cloudinary.js";
+import { processAndUploadVideo } from "../services/videoProcessing.service.js";
+import { generateThumbnail } from "../utils/videoProcessor.js";
+import { deleteVideoDirectoryFromB2 } from "../utils/b2Uploader.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   if (!req.user) {
@@ -111,31 +114,15 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }
 
   const videoFileLocalPath = req.files?.videoFile?.[0]?.path;
-  const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
+  let thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
 
   if (!videoFileLocalPath) {
     throw new APIError(400, "Video File is required!");
   }
 
-  const videoFile = await uploadOnCloudinary(videoFileLocalPath);
-
-  if (!videoFile) {
-    throw new APIError(500, "Failed to upload video on cloudinary!");
-  }
-
-  let thumbnail;
-  if (thumbnailLocalPath) {
-    thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
-
-    if (!thumbnail) {
-      throw new APIError(500, "Failed to upload thumbnail on cloudinary!");
-    }
-  }
-
-  const duration = videoFile?.duration;
-
-  if (duration === null) {
-    throw new APIError(500, "Video File is not uploaded!");
+  // Generate thumbnail if user didn't upload one
+  if (!thumbnailLocalPath) {
+    thumbnailLocalPath = await generateThumbnail(videoFileLocalPath);
   }
 
   const userId = req.user?._id;
@@ -144,13 +131,26 @@ const publishAVideo = asyncHandler(async (req, res) => {
     throw new APIError(401, "Unauthorized Request!");
   }
 
+  // Process video and upload HLS files to B2
+  const { videoFile, qualities, duration } =
+    await processAndUploadVideo(videoFileLocalPath);
+
+  const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+
+  if (!thumbnail) {
+    throw new APIError(500, "Failed to upload thumbnail on Cloudinary!");
+  }
+
+  await fs.unlink(thumbnailLocalPath);
+
   const video = await Video.create({
     title,
     description,
-    videoFile: videoFile.url,
-    thumbnail: thumbnail?.url || "",
+    videoFile,
+    thumbnail: thumbnail.url,
     isPublished: true,
     duration,
+    qualities,
     owner: userId,
   });
 
@@ -173,12 +173,12 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }));
 
   if (notifications.length > 0) {
-    // Bulk insert notifications instead of creating them individually for each subscriber using inserMany()
     await Notification.insertMany(notifications);
   }
 
   const io = getSocketIO();
 
+  //might not be efficient
   for (const subscription of subscriptions) {
     io.to(`userId:${subscription.subscriber}`).emit("notification", {
       recipient: subscription.subscriber,
@@ -409,8 +409,11 @@ const deleteVideo = asyncHandler(async (req, res) => {
   const thumbnailPath = video.thumbnail;
 
   if (videoFilePath) {
+    const parts = videoFilePath.split("/");
+    const videoId = parts[1];
+
     try {
-      await deleteFromCloudinary(videoFilePath);
+      await deleteVideoDirectoryFromB2(videoId);
     } catch (err) {
       throw new APIError(500, err.message);
     }
