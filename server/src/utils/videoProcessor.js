@@ -4,7 +4,6 @@ import path from "path";
 import crypto from "crypto";
 
 const PROCESSED_VIDEOS_DIRECTORY = path.join(
-  "server",
   "public",
   "processed"
 );
@@ -156,6 +155,7 @@ const runFFprobe = (filePath) => {
 // Run FFmpeg and handle its completion with a Promise
 const runFFmpeg = (args) => {
   return new Promise((resolve, reject) => {
+    //console.log("FFmpeg args:", args);
     const ffmpeg = spawn("ffmpeg", args);
 
     let errorOutput = "";
@@ -322,7 +322,8 @@ const processVideo = async (inputPath) => {
 
     const supportedQualities = getSupportedQualities(videoStream.height);
 
-    console.log("Generating: ", supportedQualities);
+    const qualities = supportedQualities.map((quality) => quality.name)
+    console.log("Generating: ", qualities);
 
     await Promise.all(
       supportedQualities.map((quality) =>
