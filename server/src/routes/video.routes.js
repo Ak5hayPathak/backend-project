@@ -7,6 +7,7 @@ import {
   togglePublishStatus,
   updateVideo,
   streamVideo,
+  streamHLSFile,
 } from "../controllers/video.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
@@ -40,5 +41,6 @@ router
 router.route("/toggle/publish/:videoId").patch(togglePublishStatus);
 
 router.route("/:videoId/stream").get(streamVideo);
+router.route("/stream/{*hlsPath}").get(streamHLSFile);
 
 export default router;

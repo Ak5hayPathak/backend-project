@@ -496,7 +496,23 @@ const streamVideo = asyncHandler(async (req, res) => {
 
   response.Body.pipe(res); // connects the B2 response stream to the express HTTP response
   // it takes the data coming from B2 and send it directly to the client through res.
+});
 
+const streamHLSFile = asyncHandler(async (req, res) => {
+  const { hlsPath } = req.params;
+  //hlsPath: [ '37285b97-6bd8-4b55-9b8e-9dd786371785', '144p', 'playlist.m3u8' ]
+
+  if (!hlsPath) {
+    throw new APIError(400, "hlsPath is required!");
+  }
+
+  const key = `videos/${hlsPath.join("/")}`; //join the hlsPath array element
+
+  console.log("hlsPath:", hlsPath);
+  console.log("B2 key:", key);
+  const response = await getFileFromB2(key);
+
+  response.Body.pipe(res);
 });
 
 export {
@@ -507,4 +523,5 @@ export {
   deleteVideo,
   togglePublishStatus,
   streamVideo,
+  streamHLSFile,
 };
