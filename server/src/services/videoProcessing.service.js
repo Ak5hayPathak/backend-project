@@ -1,6 +1,7 @@
 import { processVideo } from "../utils/videoProcessor.js";
 import { uploadDirectoryToB2, deleteVideoDirectoryFromB2 } from "../utils/b2Uploader.js";
 import { deleteLocalHLS } from "../utils/fileCleanup.js";
+import fs from "fs/promises";
 
 const processAndUploadVideo = async (inputPath, maxRetries = 5) => {
   let videoInfo;
@@ -42,6 +43,7 @@ const processAndUploadVideo = async (inputPath, maxRetries = 5) => {
 
         // Stop retrying if we've reached max attempts
         if (attempt === maxRetries) {
+          await fs.unlink(inputPath); //delete the hls from local storage
           throw lastError;
         }
 
@@ -61,7 +63,6 @@ const processAndUploadVideo = async (inputPath, maxRetries = 5) => {
   } catch (error) {
     console.error("Video processing and upload failed:");
     console.error(error.message);
-
     throw error;
   }
 };
