@@ -13,7 +13,10 @@ import {
 } from "../utils/cloudinary.js";
 import { processAndUploadVideo } from "../services/videoProcessing.service.js";
 import { generateThumbnail } from "../utils/videoProcessor.js";
-import { deleteVideoDirectoryFromB2 } from "../utils/b2Uploader.js";
+import {
+  deleteVideoDirectoryFromB2,
+  getFileFromB2,
+} from "../utils/b2Uploader.js";
 import path from "path";
 import fs from "fs/promises";
 
@@ -58,7 +61,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }
 
   console.log("Thumbnail Uploaded Successfully");
-   await fs.unlink(videoFileLocalPath);
+  await fs.unlink(videoFileLocalPath);
 
   const video = await Video.create({
     title,
@@ -470,6 +473,32 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, video, "Publish status updated successfully!"));
 });
 
+const streamVideo = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    throw new APIError(400, "Video id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new APIError(400, "Invalid video Id");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new APIError(404, "Video not found");
+  }
+
+  const key = video.videoFile;
+
+  const response = await getFileFromB2(key);
+
+  response.Body.pipe(res); // connects the B2 response stream to the express HTTP response
+  // it takes the data coming from B2 and send it directly to the client through res.
+
+});
+
 export {
   getAllVideos,
   publishAVideo,
@@ -477,4 +506,5 @@ export {
   updateVideo,
   deleteVideo,
   togglePublishStatus,
+  streamVideo,
 };
