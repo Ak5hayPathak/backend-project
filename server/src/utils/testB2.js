@@ -1,22 +1,26 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { b2Client } from "./b2Client.js";
+import dotenv from "dotenv";
 
-const uploadTestFile = async () => {
-  try {
-    const command = new PutObjectCommand({
-      Bucket: process.env.B2_BUCKET_NAME,
-      Key: "test/hello.txt",
-      Body: "Hello from my video platform!",
-      ContentType: "text/plain",
-    });
+dotenv.config({ path: "./server/.env" });
 
-    await b2Client.send(command);
+import { S3Client } from "@aws-sdk/client-s3";
+console.log(process.env.B2_REGION);
+const { getFileFromB2 } = await import("./b2Uploader.js");
 
-    console.log("Test file uploaded successfully!");
-  } catch (error) {
-    console.error("Upload failed:");
-    console.error(error);
+const videoId = "fb67a5e7-a8f6-498a-b536-dbcdadad966b";
+const key = `videos/${videoId}/master.m3u8`;
+
+try {
+  const response = await getFileFromB2(key);
+  response.Body.pipe(res);
+
+  // console.log("File retrieved successfully!");
+  // console.log("Content Length:", response.ContentLength);
+  // console.log("Content Type:", response.ContentType);
+  // console.log("Body:", response.Body);
+
+  for await (const chunk of response.Body) {
+    console.log("Received chunk:", chunk.length, "bytes");
   }
-};
-
-uploadTestFile();
+} catch (error) {
+  console.log("Failed to get file: ", error);
+}

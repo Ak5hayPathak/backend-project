@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import {
   PutObjectCommand,
+  GetObjectCommand,
   ListObjectVersionsCommand,
   DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
@@ -127,4 +128,17 @@ const uploadDirectoryToB2 = async (directoryPath, videoId, concurrency = 5) => {
 // const directoryPath = `./public/processed/${videoId}`;
 // await uploadDirectoryToB2(directoryPath, videoId);
 
-export { uploadDirectoryToB2, deleteVideoDirectoryFromB2 };
+const getFileFromB2 = async (key) => {
+  const response = await b2Client.send(
+    new GetObjectCommand({
+      Bucket: process.env.B2_BUCKET_NAME,
+      Key: key,
+    })
+  );
+
+  return response;
+}
+
+
+
+export { uploadDirectoryToB2, deleteVideoDirectoryFromB2, getFileFromB2 };
