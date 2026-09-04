@@ -3,10 +3,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
-const PROCESSED_VIDEOS_DIRECTORY = path.join(
-  "public",
-  "processed"
-);
+const PROCESSED_VIDEOS_DIRECTORY = path.join("public", "processed");
 
 //video resolutions available to generate
 const AVAILABLE_QUALITIES = [
@@ -253,7 +250,7 @@ const createMasterPlaylist = (qualities, videoId) => {
   for (const quality of qualities) {
     playlist += `#EXT-X-STREAM-INF:BANDWIDTH=${quality.bandwidth},`;
     playlist += `RESOLUTION=${quality.width}x${quality.height}\n`;
-    playlist += `${quality.name}/playlist.m3u8\n`;
+    playlist += `${videoId}/${quality.name}/playlist.m3u8\n`;
   }
 
   fs.writeFileSync(
@@ -322,7 +319,7 @@ const processVideo = async (inputPath) => {
 
     const supportedQualities = getSupportedQualities(videoStream.height);
 
-    const qualities = supportedQualities.map((quality) => quality.name)
+    const qualities = supportedQualities.map((quality) => quality.name);
     console.log("Generating: ", qualities);
 
     await Promise.all(
@@ -340,7 +337,7 @@ const processVideo = async (inputPath) => {
       masterPlaylistPath: path.join(
         PROCESSED_VIDEOS_DIRECTORY,
         videoId,
-        "master.m3u8",
+        "master.m3u8"
       ),
       qualities: supportedQualities.map((quality) => quality.name),
       duration,
@@ -352,6 +349,5 @@ const processVideo = async (inputPath) => {
     throw error;
   }
 };
-
 
 export { processVideo, generateThumbnail };
