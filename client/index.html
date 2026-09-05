@@ -2,32 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>client</title>
   </head>
   <body>
-    <h1>Socket connection test</h1>
-
-    <!-- gives the browser the Socket.IO client library, so it knows 
-    how to communicate with the Socket.IO server attached to your HTTP server. -->
-    <script src="http://localhost:15000/socket.io/socket.io.js"></script>
-
-    <script>
-      //establish the connection
-      const socket = io("http://localhost:15000", {
-        auth: {
-          token:
-            "access-token",
-        },
-      });
-
-      socket.on("connect", () => {
-        console.log("Connected:", socket.id);
-      });
-
-      socket.on("notification", (data) => {
-        console.log("New notification:", data);
-      });
-    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
