@@ -129,16 +129,22 @@ const uploadDirectoryToB2 = async (directoryPath, videoId, concurrency = 5) => {
 // await uploadDirectoryToB2(directoryPath, videoId);
 
 const getFileFromB2 = async (key) => {
-  const response = await b2Client.send(
-    new GetObjectCommand({
-      Bucket: process.env.B2_BUCKET_NAME,
-      Key: key,
-    })
-  );
+  try {
+    const response = await b2Client.send(
+      new GetObjectCommand({
+        Bucket: process.env.B2_BUCKET_NAME,
+        Key: key,
+      })
+    );
 
-  return response;
-}
+    return response;
+  } catch (error) {
+    if (error.name === "NoSuchKey") {
+      throw new APIError(404, "HLS file not found");
+    }
 
-
+    throw new APIError(500, "Failed to retrieve file from storage");
+  }
+};
 
 export { uploadDirectoryToB2, deleteVideoDirectoryFromB2, getFileFromB2 };
