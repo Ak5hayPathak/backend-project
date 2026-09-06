@@ -508,9 +508,19 @@ const streamHLSFile = asyncHandler(async (req, res) => {
 
   const key = `videos/${hlsPath.join("/")}`; //join the hlsPath array element
 
-  console.log("hlsPath:", hlsPath);
-  console.log("B2 key:", key);
+  // console.log("hlsPath:", hlsPath);
+  // console.log("B2 key:", key);
   const response = await getFileFromB2(key);
+
+  const fileName = hlsPath[hlsPath.length-1];
+
+  if(fileName.endsWith(".m3u8")){
+    res.type("application/vnd.apple.mpegurl");
+  }else if(fileName.endsWith(".ts")){
+    res.type("video/mp2t");
+  }else{
+    res.type("application/octet-stream");
+  }
 
   response.Body.pipe(res);
 });
