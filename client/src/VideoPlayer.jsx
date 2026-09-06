@@ -1,8 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 
 const VideoPlayer = ({ videoId }) => {
   const videoRef = useRef(null);
+  const hlsRef = useRef(null);
+
+  const [levels, setLevels] = useState([]);
+  const [currentQuality, setCurrentQuality] = useState(-1);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -25,8 +29,6 @@ const VideoPlayer = ({ videoId }) => {
 
             context.url =
               `http://localhost:15000/api/v1/videos/stream/${processingId}/${path}`;
-
-            console.log("Rewritten HLS URL:", context.url);
           }
 
           return super.load(context, config, callbacks);
@@ -41,11 +43,23 @@ const VideoPlayer = ({ videoId }) => {
         },
       });
 
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setLevels(hls.levels);
+      });
+
+      hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
+        setCurrentQuality(data.level);
+      });
+
       hls.loadSource(videoUrl);
       hls.attachMedia(video);
 
       return () => {
         hls.destroy();
+        hlsRef.current = null;
+        setLevels([]);
       };
     }
 
@@ -54,7 +68,32 @@ const VideoPlayer = ({ videoId }) => {
     }
   }, [videoId]);
 
-  return <video ref={videoRef} controls width="720" />;
+  const handleQualityChange = (event) => {
+    const level = Number(event.target.value);
+
+    if (hlsRef.current) {
+      hlsRef.current.currentLevel = level;
+      setCurrentQuality(level);
+    }
+  };
+
+  return (
+    <div>
+      <video ref={videoRef} controls width="400" />
+
+      {levels.length > 0 && (
+        <select value={currentQuality} onChange={handleQualityChange}>
+          <option value={-1}>Auto</option>
+
+          {levels.map((level, index) => (
+            <option key={index} value={index}>
+              {level.height}p
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
 };
 
 export default VideoPlayer;
