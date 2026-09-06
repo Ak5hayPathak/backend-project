@@ -512,15 +512,25 @@ const streamHLSFile = asyncHandler(async (req, res) => {
   // console.log("B2 key:", key);
   const response = await getFileFromB2(key);
 
-  const fileName = hlsPath[hlsPath.length-1];
+  const fileName = hlsPath[hlsPath.length - 1];
 
-  if(fileName.endsWith(".m3u8")){
+  if (fileName.endsWith(".m3u8")) {
     res.type("application/vnd.apple.mpegurl");
-  }else if(fileName.endsWith(".ts")){
+  } else if (fileName.endsWith(".ts")) {
     res.type("video/mp2t");
-  }else{
+  } else {
     res.type("application/octet-stream");
   }
+
+  response.Body.on("error", (error) => {
+    console.error("HLS stream error:", error);
+
+    if (!res.headersSent) {
+      res.status(500).end();
+    } else {
+      res.destroy(error);
+    }
+  });
 
   response.Body.pipe(res);
 });
