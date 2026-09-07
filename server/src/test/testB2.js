@@ -4,7 +4,7 @@ dotenv.config({ path: "./server/.env" });
 
 import { S3Client } from "@aws-sdk/client-s3";
 console.log(process.env.B2_REGION);
-const { getFileFromB2 } = await import("./b2Uploader.js");
+const { getFileFromB2 } = await import("../utils/b2Uploader.js");
 
 const videoId = "fb67a5e7-a8f6-498a-b536-dbcdadad966b";
 const key = `videos/${videoId}/master.m3u8`;
