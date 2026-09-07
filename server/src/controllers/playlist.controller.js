@@ -5,6 +5,7 @@ import { User } from "../models/user.model.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { PlaylistCollaborator } from "../models/playlistCollaborator.model.js";
 
 const createPlaylist = asyncHandler(async (req, res) => {
   if (!req.user) {
@@ -405,6 +406,14 @@ const toggleVisibility = asyncHandler(async (req, res) => {
 
   if (!playlist) {
     throw new APIError(404, "Playlist not found or access denied!");
+  }
+
+  const collaborator = await PlaylistCollaborator.findOne({
+    playlist: playlistId,
+  });
+
+  if(collaborator){
+    throw new APIError(401, "This playlist have collaborator or pending collaborator, thus it cannot be made private");
   }
 
   playlist.isPublic = !playlist.isPublic;
