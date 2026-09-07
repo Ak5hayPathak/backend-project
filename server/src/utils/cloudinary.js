@@ -10,21 +10,23 @@ cloudinary.config({
 
 // Upload an image
 const uploadOnCloudinary = async (localFilePath) => {
-  try {
-    if (!localFilePath) return null;
+  if (!localFilePath) return null;
 
+  try {
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
     });
 
-    //console.log("File has been uploaded successfully", response.url);
-    fs.unlinkSync(localFilePath);
     return response;
-    
   } catch (err) {
     console.error("Cloudinary upload error:", err);
-    fs.unlinkSync(localFilePath);
     return null;
+  } finally {
+    try {
+      fs.unlinkSync(localFilePath);
+    } catch (err) {
+      console.error("Failed to delete local file:", err);
+    }
   }
 };
 
@@ -36,9 +38,9 @@ const deleteFromCloudinary = async (imageUrl) => {
     const parts = imageUrl.split("/");
 
     // Getting everything after the version
-    const publicIdWithExtension = parts.slice(parts.indexOf(
-      parts.find(part => /^v\d+$/.test(part))
-    ) + 1).join("/");
+    const publicIdWithExtension = parts
+      .slice(parts.indexOf(parts.find((part) => /^v\d+$/.test(part))) + 1)
+      .join("/");
 
     // Removing the file extension
     const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, "");
@@ -48,10 +50,9 @@ const deleteFromCloudinary = async (imageUrl) => {
     console.log("Successfully Deleted!");
     return result;
   } catch (error) {
-    
     console.error("Cloudinary delete error:", error);
     throw error;
   }
 };
 
-export {uploadOnCloudinary, deleteFromCloudinary};
+export { uploadOnCloudinary, deleteFromCloudinary };
