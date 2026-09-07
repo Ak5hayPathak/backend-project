@@ -32,6 +32,10 @@ const sendInvitation = asyncHandler(async (req, res) => {
     throw new APIError(404, "Playlist not found or access denied!");
   }
 
+  if(!playlist.isPublic){
+    throw new APIError(401, "Private playlists cannot have collaborators!");
+  }
+
   if (!userId) {
     throw new APIError(400, "User Id is required!");
   }
