@@ -51,7 +51,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }
 
   // Process video and upload HLS files to B2
-  const { videoFile, qualities, duration } =
+  const {videoId, videoFile, qualities, duration } =
     await processAndUploadVideo(videoFileLocalPath);
 
   const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
@@ -72,6 +72,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     duration,
     qualities,
     owner: userId,
+    processingId: videoId,
   });
 
   const publishedVideo = await Video.findById(video._id);

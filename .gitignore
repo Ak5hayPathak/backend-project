@@ -46,10 +46,10 @@ build/Release
 node_modules/
 jspm_packages/
 
-killProcess.js
+killPORTProcess.js
 rough.js
 blackHole.mp4
-tree.js
+getProjectTree.js
 PROJECT_TREE.md
 
 # Snowpack dependency directory (https://snowpack.dev/)
