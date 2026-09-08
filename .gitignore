@@ -50,6 +50,7 @@ killPORTProcess.js
 rough.js
 blackHole.mp4
 getProjectTree.js
+generateJwtSecrets.js
 PROJECT_TREE.md
 
 # Snowpack dependency directory (https://snowpack.dev/)
