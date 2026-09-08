@@ -19,6 +19,7 @@ import {
 } from "../utils/b2Uploader.js";
 import path from "path";
 import fs from "fs/promises";
+import { generateStreamToken } from "../utils/streamToken.js";
 
 const publishAVideo = asyncHandler(async (req, res) => {
   let { title, description = "" } = req.body;
@@ -51,7 +52,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   }
 
   // Process video and upload HLS files to B2
-  const {videoId, videoFile, qualities, duration } =
+  const { videoId, videoFile, qualities, duration } =
     await processAndUploadVideo(videoFileLocalPath);
 
   const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
@@ -507,6 +508,12 @@ const streamHLSFile = asyncHandler(async (req, res) => {
     throw new APIError(400, "hlsPath is required!");
   }
 
+  const { processingId } = req.stream;
+
+  if (processingId !== hlsPath[0]) {
+    throw new APIError(403, "You are not allowed to access this video");
+  }
+
   const key = `videos/${hlsPath.join("/")}`; //join the hlsPath array element
 
   // console.log("hlsPath:", hlsPath);
@@ -527,13 +534,53 @@ const streamHLSFile = asyncHandler(async (req, res) => {
     console.error("HLS stream error:", error);
 
     if (!res.headersSent) {
+      //if we haven't started sending the response yet send a 500.
       res.status(500).end();
     } else {
+      //if we've already started streaming
+      //we can't change the HTTP status
+      //so we terminate the response connection.
       res.destroy(error);
     }
   });
 
   response.Body.pipe(res);
+});
+
+const createStreamToken = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    throw new APIError(400, "Video id is required!");
+  }
+
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new APIError(400, "Invalid video id");
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new APIError(404, "Video not found");
+  }
+
+  if (!video.isPublished && !video.owner.equals(req.user._id)) {
+    throw new APIError(403, "You are not allowed to watch this video");
+  }
+
+  const processingId = video.videoFile.split("/")[1];
+
+  const token = generateStreamToken({
+    userId: req.user._id.toString(),
+    videoId,
+    processingId,
+  });
+
+  return res
+    .status(200)
+    .json(
+      new APIResponse(200, { token }, "Stream token generated successfully")
+    );
 });
 
 export {
@@ -545,4 +592,5 @@ export {
   togglePublishStatus,
   streamVideo,
   streamHLSFile,
+  createStreamToken,
 };
