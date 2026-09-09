@@ -3,7 +3,7 @@ import { User } from "../models/user.model.js";
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
-} from "../utils/cloudinary.js";
+} from "../services/cloudinary.service.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { APIError } from "../utils/APIError.js";
 import jwt from "jsonwebtoken";

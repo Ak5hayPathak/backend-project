@@ -10,13 +10,13 @@ import { getSocketIO } from "../sockets/socket.manager.js";
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
-} from "../utils/cloudinary.js";
+} from "../services/cloudinary.service.js";
 import { processAndUploadVideo } from "../services/videoProcessing.service.js";
 import { generateThumbnail } from "../utils/videoProcessor.js";
 import {
   deleteVideoDirectoryFromB2,
   getFileFromB2,
-} from "../utils/b2Uploader.js";
+} from "../services/b2.service.js";
 import path from "path";
 import fs from "fs/promises";
 import { generateStreamToken } from "../utils/streamToken.js";

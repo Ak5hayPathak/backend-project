@@ -6,7 +6,7 @@ import {
   ListObjectVersionsCommand,
   DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
-import { b2Client } from "./b2Client.js";
+import { b2Client } from "../config/b2Client.js";
 
 const uploadFileToB2 = async (filePath, key) => {
   const fileStream = fs.createReadStream(filePath);

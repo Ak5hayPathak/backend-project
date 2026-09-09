@@ -1,5 +1,5 @@
 import { processVideo } from "../utils/videoProcessor.js";
-import { uploadDirectoryToB2, deleteVideoDirectoryFromB2 } from "../utils/b2Uploader.js";
+import { uploadDirectoryToB2, deleteVideoDirectoryFromB2 } from "./b2.service.js";
 import { deleteLocalHLS } from "../utils/fileCleanup.js";
 import fs from "fs/promises";
 
