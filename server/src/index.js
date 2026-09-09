@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import http from "http";
 
-import connectDB from "./db/connection.js";
+import connectDB from "./config/db.js";
 import { app } from "./app.js";
 
 import { initializeSocketIO } from "./sockets/index.js";
