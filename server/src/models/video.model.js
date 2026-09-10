@@ -1,41 +1,59 @@
 import mongoose, { Schema } from "mongoose";
+
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const videoSchema = new Schema(
   {
+    // Video content
     videoFile: {
-      type: String, //Backblaze url
-      required: true,
+      type: String, // Backblaze URL
     },
+
     thumbnail: {
-      type: String, //cloudinary url
+      type: String, // Cloudinary URL
     },
+
+    // Video metadata
     title: {
       type: String,
       required: true,
     },
+
     description: {
       type: String,
     },
+
     duration: {
       type: Number,
-      required: true,
     },
+
     qualities: {
       type: [String],
-      required: true,
     },
+
+    // Video statistics
     views: {
       type: Number,
       default: 0,
     },
+
+    // Publishing
     isPublished: {
       type: Boolean,
       default: true,
     },
+
+    // Ownership
     owner: {
       type: Schema.Types.ObjectId,
       ref: "User",
+    },
+
+    // Processing
+    processingStatus: {
+      type: String,
+      enum: ["processing", "ready", "failed"],
+      default: "processing",
     },
   },
   {

@@ -1,48 +1,32 @@
 import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
-import { Notification } from "../models/notification.model.js";
-import { Subscription } from "../models/subscription.model.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { getSocketIO } from "../sockets/socket.manager.js";
+import { videoProcessingQueue } from "../queues/video.queue.js";
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
 } from "../services/cloudinary.service.js";
-import { processAndUploadVideo } from "../services/videoProcessing.service.js";
-import { generateThumbnail } from "../utils/videoProcessor.js";
 import {
   deleteVideoDirectoryFromB2,
   getFileFromB2,
 } from "../services/b2.service.js";
-import path from "path";
-import fs from "fs/promises";
 import { generateStreamToken } from "../utils/streamToken.js";
 
 const publishAVideo = asyncHandler(async (req, res) => {
-  let { title, description = "" } = req.body;
+  const { title, description = "" } = req.body;
 
   if (!title?.trim()) {
     throw new APIError(400, "Video title is required!");
   }
 
   const videoFileLocalPath = req.files?.videoFile?.[0]?.path;
-  let thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
+  const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
 
   if (!videoFileLocalPath) {
     throw new APIError(400, "Video File is required!");
-  }
-
-  // Generate thumbnail if user didn't upload one
-  if (!thumbnailLocalPath) {
-    thumbnailLocalPath = path.join(
-      "public",
-      "temp",
-      `thumbnail-${Date.now()}.jpg`
-    );
-    await generateThumbnail(videoFileLocalPath, thumbnailLocalPath);
   }
 
   const userId = req.user?._id;
@@ -51,70 +35,29 @@ const publishAVideo = asyncHandler(async (req, res) => {
     throw new APIError(401, "Unauthorized Request!");
   }
 
-  // Process video and upload HLS files to B2
-  const { videoId, videoFile, qualities, duration } =
-    await processAndUploadVideo(videoFileLocalPath);
-
-  const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
-
-  if (!thumbnail) {
-    throw new APIError(500, "Failed to upload thumbnail on Cloudinary!");
-  }
-
-  console.log("Thumbnail Uploaded Successfully");
-  await fs.unlink(videoFileLocalPath);
-
+  // Create video record before processing
   const video = await Video.create({
     title,
     description,
-    videoFile,
-    thumbnail: thumbnail.url,
-    isPublished: true,
-    duration,
-    qualities,
     owner: userId,
-    processingId: videoId,
+    processingStatus: "processing",
+    isPublished: false,
   });
 
-  const publishedVideo = await Video.findById(video._id);
+  // Add video-processing job
+  const job = await videoProcessingQueue.add("process-video", {
+    videoId: video._id.toString(),
+    videoFileLocalPath,
+    thumbnailLocalPath,
+    username: req.user.username,
+  });
 
-  if (!publishedVideo) {
-    throw new APIError(500, "Something went wrong while uploading the video!");
-  }
-
-  const subscriptions = await Subscription.find({
-    channel: userId,
-  }).select("subscriber");
-
-  const notifications = subscriptions.map((subscription) => ({
-    recipient: subscription.subscriber,
-    sender: userId,
-    type: "new_video",
-    message: `${req.user.username} posted a new video`,
-    resource: publishedVideo._id,
-  }));
-
-  if (notifications.length > 0) {
-    await Notification.insertMany(notifications);
-  }
-
-  const io = getSocketIO();
-
-  //might not be efficient
-  for (const subscription of subscriptions) {
-    io.to(`userId:${subscription.subscriber}`).emit("notification", {
-      recipient: subscription.subscriber,
-      sender: userId,
-      type: "new_video",
-      message: `${req.user.username} posted a new video`,
-      resource: publishedVideo._id,
-    });
-  }
+  console.log(`Video processing job added: ${job.id}`);
 
   return res
     .status(201)
     .json(
-      new APIResponse(201, publishedVideo, "Video Published Successfully!")
+      new APIResponse(201, video, "Video uploaded and processing started!")
     );
 });
 

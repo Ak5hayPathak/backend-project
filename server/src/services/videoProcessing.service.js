@@ -1,7 +1,14 @@
 import { processVideo } from "../utils/videoProcessor.js";
-import { uploadDirectoryToB2, deleteVideoDirectoryFromB2 } from "./b2.service.js";
+import {
+  uploadDirectoryToB2,
+  deleteVideoDirectoryFromB2,
+} from "./b2.service.js";
+import { uploadOnCloudinary } from "./cloudinary.service.js";
+import { generateThumbnail } from "../utils/videoProcessor.js";
 import { deleteLocalHLS } from "../utils/fileCleanup.js";
+import { APIError } from "../utils/APIError.js";
 import fs from "fs/promises";
+import path from "path";
 
 const processAndUploadVideo = async (inputPath, maxRetries = 5) => {
   let videoInfo;
@@ -67,5 +74,34 @@ const processAndUploadVideo = async (inputPath, maxRetries = 5) => {
   }
 };
 
-export { processAndUploadVideo };
+const processAndUploadThumbnail = async (
+  thumbnailLocalPath,
+  videoFileLocalPath
+) => {
+  try {
+    // Generate thumbnail if user didn't provide one
+    if (!thumbnailLocalPath) {
+      thumbnailLocalPath = path.join(
+        "public",
+        "temp",
+        `thumbnail-${Date.now()}.jpg`
+      );
 
+      await generateThumbnail(videoFileLocalPath, thumbnailLocalPath);
+    }
+
+    // Upload thumbnail to Cloudinary
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+
+    if (!thumbnail) {
+      throw new APIError(500, "Failed to upload thumbnail on Cloudinary!");
+    }
+
+    return thumbnail.url;
+  } catch (error) {
+    console.error("Thumbnail processing failed:", error.message);
+    throw error;
+  }
+};
+
+export { processAndUploadVideo, processAndUploadThumbnail };
