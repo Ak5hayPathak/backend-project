@@ -52,6 +52,9 @@ blackHole.mp4
 getProjectTree.js
 generateJwtSecrets.js
 PROJECT_TREE.md
+dependency-graph.html
+depgraph.js
+portCheck.js
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
