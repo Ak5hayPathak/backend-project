@@ -3,7 +3,6 @@ import http from "http";
 
 import connectDB from "./config/db.js";
 import { app } from "./app.js";
-import "./config/redis.js";
 
 import { initializeSocketIO } from "./sockets/index.js";
 
