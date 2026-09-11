@@ -252,6 +252,38 @@ const verifyEmail = asyncHandler(async (req, res) => {
     .json(new APIResponse(200, null, "Email verified successfully!"));
 });
 
+const resendVerificationEmail = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        throw new APIError(404, "User not found");
+    }
+
+    if (user.isEmailVerified) {
+        throw new APIError(400, "Email is already verified");
+    }
+
+    const { token, hashedToken, tokenExpires } =
+        generateVerificationToken();
+
+    user.emailVerificationToken = hashedToken;
+    user.emailVerificationTokenExpires = tokenExpires;
+
+    await user.save();
+
+    await sendVerificationEmail(user.email, token);
+
+    return res
+        .status(200)
+        .json(
+            new APIResponse(
+                200,
+                null,
+                "Verification email sent successfully!"
+            )
+        );
+});
+
 const changePassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword, confirmPassword } = req.body;
 
@@ -637,6 +669,7 @@ export {
   refreshAccessToken,
   changePassword,
   verifyEmail,
+  resendVerificationEmail,
   updateUserDetails,
   getCurrentUser,
   updateFiles,

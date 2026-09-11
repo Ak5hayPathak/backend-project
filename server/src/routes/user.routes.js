@@ -7,6 +7,7 @@ import {
   loginUser,
   logoutUser,
   verifyEmail,
+  resendVerificationEmail,
   refreshAccessToken,
   registerUser,
   updateFiles,
@@ -46,7 +47,8 @@ router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/change-password").post(verifyJWT, changePassword);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
-router.get("/verify-email/:token", verifyEmail);
+router.route("/verify-email/:token").get(verifyEmail);
+router.route("/resend-verification-email").post(verifyJWT, resendVerificationEmail);
 router.route("/update-account").patch(verifyJWT, updateUserDetails);
 router.route("/update-files").patch(
   verifyJWT,
@@ -68,6 +70,8 @@ router.route("/update-files").patch(
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 router.route("/history").get(verifyJWT, getWatchHistory);
 router.route("/history/clear").get(verifyJWT, clearWatchHistory);
-router.route("/history/clear/:videoId").get(verifyJWT, removeVideoFromWatchHistory);
+router
+  .route("/history/clear/:videoId")
+  .get(verifyJWT, removeVideoFromWatchHistory);
 
 export default router;
