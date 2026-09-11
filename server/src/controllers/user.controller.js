@@ -6,6 +6,7 @@ import {
 } from "../services/cloudinary.service.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { APIError } from "../utils/APIError.js";
+import { generateVerificationToken } from "../utils/emailVerification.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
@@ -84,6 +85,8 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new APIError(400, "Avatar file is required!");
   }
 
+  const { token, hashedToken, tokenExpires } = generateVerificationToken();
+
   const user = await User.create({
     fullName,
     avatar: avatar.url,
@@ -91,6 +94,9 @@ const registerUser = asyncHandler(async (req, res) => {
     email,
     password,
     username: username.toLowerCase(),
+
+    emailVerificationToken: hashedToken,
+    emailVerificationTokenExpires: tokenExpires,
   });
 
   const createdUser = await User.findById(user._id).select(

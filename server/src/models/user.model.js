@@ -21,6 +21,21 @@ const userSchema = new Schema(
       trim: true,
     },
 
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    emailVerificationToken: {
+      type: String,
+      default: null,
+    },
+
+    emailVerificationTokenExpires: {
+      type: Date,
+      default: null,
+    },
+
     fullName: {
       type: String,
       required: true,
