@@ -15,6 +15,7 @@ import {
   verifyStreamToken,
 } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import { isEmailVerified } from "../middlewares/emailVerification.middleware.js";
 
 const router = Router();
 // router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
@@ -24,6 +25,7 @@ router
   .get(verifyJWT, getAllVideos)
   .post(
     verifyJWT,
+    isEmailVerified,
     upload.fields([
       {
         name: "videoFile",
@@ -40,10 +42,10 @@ router
 router
   .route("/:videoId")
   .get(verifyJWT, getVideoById)
-  .delete(verifyJWT, deleteVideo)
-  .patch(verifyJWT, upload.single("thumbnail"), updateVideo);
+  .delete(verifyJWT, isEmailVerified, deleteVideo)
+  .patch(verifyJWT, isEmailVerified, upload.single("thumbnail"), updateVideo);
 
-router.route("/toggle/publish/:videoId").patch(verifyJWT, togglePublishStatus);
+router.route("/toggle/publish/:videoId").patch(verifyJWT,isEmailVerified, togglePublishStatus);
 
 router.route("/:videoId/stream-token").post(verifyJWT, createStreamToken);
 

@@ -133,6 +133,10 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new APIError(404, "Invalid password");
   }
 
+  if (!user.isEmailVerified) {
+    throw new APIError(403, "Please verify your email before logging in");
+  }
+
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     user._id
   );
@@ -253,35 +257,28 @@ const verifyEmail = asyncHandler(async (req, res) => {
 });
 
 const resendVerificationEmail = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id);
 
-    if (!user) {
-        throw new APIError(404, "User not found");
-    }
+  if (!user) {
+    throw new APIError(404, "User not found");
+  }
 
-    if (user.isEmailVerified) {
-        throw new APIError(400, "Email is already verified");
-    }
+  if (user.isEmailVerified) {
+    throw new APIError(400, "Email is already verified");
+  }
 
-    const { token, hashedToken, tokenExpires } =
-        generateVerificationToken();
+  const { token, hashedToken, tokenExpires } = generateVerificationToken();
 
-    user.emailVerificationToken = hashedToken;
-    user.emailVerificationTokenExpires = tokenExpires;
+  user.emailVerificationToken = hashedToken;
+  user.emailVerificationTokenExpires = tokenExpires;
 
-    await user.save();
+  await user.save();
 
-    await sendVerificationEmail(user.email, token);
+  await sendVerificationEmail(user.email, token);
 
-    return res
-        .status(200)
-        .json(
-            new APIResponse(
-                200,
-                null,
-                "Verification email sent successfully!"
-            )
-        );
+  return res
+    .status(200)
+    .json(new APIResponse(200, null, "Verification email sent successfully!"));
 });
 
 const changePassword = asyncHandler(async (req, res) => {

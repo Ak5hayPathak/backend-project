@@ -17,11 +17,12 @@ import {
 } from "../controllers/playlistCollaborator.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { isEmailVerified } from "../middlewares/emailVerification.middleware.js";
 
 const router = Router();
 
 // Protected routes
-router.use(verifyJWT);
+router.use(verifyJWT, isEmailVerified);
 
 // Get all collaborators
 router.route("/playlist/:playlistId/collaborators").get(getAllCollaborators);

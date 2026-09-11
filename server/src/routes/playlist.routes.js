@@ -10,28 +10,29 @@ import {
   updatePlaylist,
 } from "../controllers/playlist.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { isEmailVerified } from "../middlewares/emailVerification.middleware.js";
 import { verifyPlaylistEditor } from "../middlewares/authPlaylist.middleware.js";
 
 const router = Router();
 
 router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
 
-router.route("/").post(createPlaylist);
+router.route("/").post(isEmailVerified, createPlaylist);
 
 router
   .route("/:playlistId")
   .get(getPlaylistById)
-  .patch(verifyPlaylistEditor, updatePlaylist)
-  .delete(deletePlaylist);
+  .patch(isEmailVerified, verifyPlaylistEditor, updatePlaylist)
+  .delete(isEmailVerified, deletePlaylist);
 
 router
   .route("/add/:videoId/:playlistId")
-  .patch(verifyPlaylistEditor, addVideoToPlaylist);
+  .patch(isEmailVerified, verifyPlaylistEditor, addVideoToPlaylist);
 router
   .route("/remove/:videoId/:playlistId")
-  .patch(verifyPlaylistEditor, removeVideoFromPlaylist);
+  .patch(isEmailVerified, verifyPlaylistEditor, removeVideoFromPlaylist);
 
 router.route("/user/:userId").get(getUserPlaylists);
-router.route("/:playlistId/visibility").patch(toggleVisibility);
+router.route("/:playlistId/visibility").patch(isEmailVerified, toggleVisibility);
 
 export default router;
