@@ -6,9 +6,11 @@ import {
 } from "../services/cloudinary.service.js";
 import { APIResponse } from "../utils/APIResponse.js";
 import { APIError } from "../utils/APIError.js";
-import { generateVerificationToken } from "../utils/emailVerification.js";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import mongoose from "mongoose";
+import { generateVerificationToken } from "../utils/emailVerification.js";
+import { sendVerificationEmail } from "../services/email.service.js";
 
 const options = {
   httpOnly: true,
@@ -98,6 +100,8 @@ const registerUser = asyncHandler(async (req, res) => {
     emailVerificationToken: hashedToken,
     emailVerificationTokenExpires: tokenExpires,
   });
+
+  await sendVerificationEmail(email, token);
 
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
@@ -217,6 +221,35 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   } catch (error) {
     throw new APIError(401, error?.message || "Invalid Refresh Token");
   }
+});
+
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  if (!token) {
+    throw new APIError(400, "Verification token is required");
+  }
+
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationTokenExpires: { $gt: new Date() },
+  });
+
+  if (!user) {
+    throw new APIError(400, "Invalid or expired verification token");
+  }
+
+  user.isEmailVerified = true;
+  user.emailVerificationToken = null;
+  user.emailVerificationTokenExpires = null;
+
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, null, "Email verified successfully!"));
 });
 
 const changePassword = asyncHandler(async (req, res) => {
@@ -603,6 +636,7 @@ export {
   logoutUser,
   refreshAccessToken,
   changePassword,
+  verifyEmail,
   updateUserDetails,
   getCurrentUser,
   updateFiles,
