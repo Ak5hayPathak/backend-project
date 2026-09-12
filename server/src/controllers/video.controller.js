@@ -97,12 +97,13 @@ const getAllVideos = asyncHandler(async (req, res) => {
   pipeline.push({
     $match: {
       isPublished: true,
+      processingStatus: "ready",
     },
   });
 
   // Filter by owner (optional)
   if (userId) {
-    if (!mongoose.mongoose.isValidObjectId(userId)) {
+    if (!mongoose.isValidObjectId(userId)) {
       throw new APIError(400, "Invalid user ID");
     }
 
@@ -257,7 +258,7 @@ const getVideoById = asyncHandler(async (req, res) => {
   ]);
 
   if (!aggregatedArrayOfVideo?.length) {
-    throw new ApiError(404, "Video dataset error");
+    throw new APIError(404, "Video dataset error");
   }
 
   return res
@@ -532,6 +533,79 @@ const createStreamToken = asyncHandler(async (req, res) => {
     );
 });
 
+const searchVideos = asyncHandler(async (req, res) => {
+  let { q, page = 1, limit = 10 } = req.query;
+
+  if (!q?.trim()) {
+    throw new APIError(400, "Search query is required!");
+  }
+
+  q = q.trim();
+
+  const pipeline = [
+    {
+      $match: {
+        $text: {
+          $search: q,
+        },
+        isPublished: true,
+        processingStatus: "ready",
+      },
+    },
+
+    {
+      $addFields: {
+        searchScore: {
+          $meta: "textScore",
+        },
+      },
+    },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "ownerDetails",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              fullName: 1,
+              avatar: 1,
+            },
+          },
+        ],
+      },
+    },
+
+    {
+      $unwind: "$ownerDetails",
+    },
+
+    {
+      $sort: {
+        searchScore: -1,
+      },
+    },
+
+    {
+      $project: {
+        searchScore: 0,
+      },
+    },
+  ];
+
+  const result = await Video.aggregatePaginate(Video.aggregate(pipeline), {
+    page: Number(page),
+    limit: Number(limit),
+  });
+
+  return res
+    .status(200)
+    .json(new APIResponse(200, result, "Search results fetched successfully!"));
+});
+
 export {
   getAllVideos,
   publishAVideo,
@@ -542,4 +616,5 @@ export {
   streamVideo,
   streamHLSFile,
   createStreamToken,
+  searchVideos,
 };

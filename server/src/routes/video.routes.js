@@ -9,6 +9,7 @@ import {
   streamVideo,
   streamHLSFile,
   createStreamToken,
+  searchVideos,
 } from "../controllers/video.controller.js";
 import {
   verifyJWT,
@@ -39,13 +40,17 @@ router
     publishAVideo
   );
 
+router.route("/search").get(verifyJWT, searchVideos);
+
 router
   .route("/:videoId")
   .get(verifyJWT, getVideoById)
   .delete(verifyJWT, isEmailVerified, deleteVideo)
   .patch(verifyJWT, isEmailVerified, upload.single("thumbnail"), updateVideo);
 
-router.route("/toggle/publish/:videoId").patch(verifyJWT,isEmailVerified, togglePublishStatus);
+router
+  .route("/toggle/publish/:videoId")
+  .patch(verifyJWT, isEmailVerified, togglePublishStatus);
 
 router.route("/:videoId/stream-token").post(verifyJWT, createStreamToken);
 
