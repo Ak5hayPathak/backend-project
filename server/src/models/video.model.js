@@ -23,6 +23,11 @@ const videoSchema = new Schema(
       type: String,
     },
 
+    tags: {
+      type: [String],
+      default: [],
+    },
+
     duration: {
       type: Number,
     },

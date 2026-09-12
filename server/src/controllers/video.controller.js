@@ -16,7 +16,7 @@ import {
 import { generateStreamToken } from "../utils/streamToken.js";
 
 const publishAVideo = asyncHandler(async (req, res) => {
-  const { title, description = "" } = req.body;
+  const { title, description = "", tags = [] } = req.body;
 
   if (!title?.trim()) {
     throw new APIError(400, "Video title is required!");
@@ -39,6 +39,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   const video = await Video.create({
     title,
     description,
+    tags,
     owner: userId,
     processingStatus: "processing",
     isPublished: false,
@@ -290,12 +291,13 @@ const updateVideo = asyncHandler(async (req, res) => {
     throw new APIError(404, "Video not found or access denied!");
   }
 
-  const { title, description, isPublished } = req.body;
+  const { title, description, tags, isPublished } = req.body;
   const newThumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
 
   if (
     title === undefined &&
     description === undefined &&
+    tags === undefined &&
     isPublished === undefined &&
     !newThumbnailLocalPath
   ) {
@@ -310,6 +312,10 @@ const updateVideo = asyncHandler(async (req, res) => {
 
   if (description !== undefined) {
     video.description = description;
+  }
+
+  if (tags !== undefined) {
+    video.tags = tags;
   }
 
   if (isPublished !== undefined) {
