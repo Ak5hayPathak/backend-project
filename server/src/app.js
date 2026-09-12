@@ -30,6 +30,7 @@ import dashboardRouter from "./routes/dashboard.routes.js";
 import watchLater from "./routes/watchLater.routes.js";
 import playlistCollaboratorRouter from "./routes/playlistCollaborator.routes.js";
 import notificationRouter from "./routes/notification.routes.js";
+import searchHistoryRouter from "./routes/searchHistory.routes.js";
 
 //routes declaration
 app.use("/api/v1/users", userRouter);
@@ -43,6 +44,7 @@ app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/watch-later", watchLater);
 app.use("/api/v1/playlist-collab", playlistCollaboratorRouter);
 app.use("/api/v1/notifications", notificationRouter);
+app.use("/api/v1/search-history", searchHistoryRouter);
 
 // https://localhost:8000/api/v1/users/register
 // https://localhost:8000/api/v1/users/login

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
+import { SearchHistory } from "../models/searchHistory.model.js";
 import { User } from "../models/user.model.js";
 import { APIError } from "../utils/APIError.js";
 import { APIResponse } from "../utils/APIResponse.js";
@@ -600,6 +601,25 @@ const searchVideos = asyncHandler(async (req, res) => {
     page: Number(page),
     limit: Number(limit),
   });
+
+  await SearchHistory.findOneAndUpdate(
+    {
+      user: req.user._id,
+      query: q.toLowerCase(),
+    },
+    {
+      $set: {
+        searchedAt: new Date(),
+      },
+      $setOnInsert: {
+        user: req.user._id,
+        query: q.toLowerCase(),
+      },
+    },
+    {
+      upsert: true,
+    }
+  );
 
   return res
     .status(200)
